@@ -1,0 +1,11 @@
+#!/bin/sh
+## Enter a bunch of svn commands interactively. 
+while read -p "svn> " line; do
+    if [ "x$line" != "xexit" ]; then
+	svn $line;
+    else
+	echo "bye";
+	break;
+    fi;
+done
+
