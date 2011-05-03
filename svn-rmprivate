@@ -1,0 +1,18 @@
+#!/bin/sh
+## Remove unversioned files and empty directories, 
+## with -r also any unversioned directory trees. 
+
+recursiveFlag=
+if [ "$1" = "-r" ]; then
+    recursiveFlag='-r'
+    shift
+fi
+
+svn status "$@" | grep '^\?' | cut -c 9- | while read victim
+do
+    if [ -d "$victim" -a -z "$recursiveFlag" ]; then
+	rmdir -- "$victim" && echo "$victim"
+    else
+	rm $recursiveFlag -- "$victim" && echo "$victim"
+    fi
+done
