@@ -1,2 +1,24 @@
 #!/bin/sh
-svn status "$@" | grep '^\?' | cut -c 9-
+## List unversioned files, show a summary for unversioned directories
+## or with -l the entire subdir contents. 
+
+isLongFormat=
+if [ "$1" = "-l" ]; then
+    isLongFormat='true'
+    shift
+fi
+
+svn status "$@" | grep '^\?' | cut -c 9- | while read filespec
+do
+    if [ -d "$filespec" ]; then
+	if [ "$isLongFormat" ]; then
+	    find "$filespec"
+	else
+	    fileNum=$(find "$filespec" -type f | wc -l)
+	    dirsize=$(du -s --human-readable -- "$filespec" | cut -f 1)
+	    echo "$filespec [directory; $fileNum file$([ $fileNum -eq 1 ] || printf 's'), ${dirsize}]"
+	fi
+    else
+	echo "$filespec"
+    fi
+done
