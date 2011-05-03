@@ -1,7 +1,30 @@
 #!/bin/sh
+## With -b (ignore space change) and -w (ignore all white space) options. 
+## Highlights diff output red/green. 
 
+diffOptions=
+
+# Simplify setting common diff options (that do not overlap with svn options). 
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	-b)
+	    shift
+	    diffOptions="${diffOptions:--x -u }${diffOptions:+ }-b"
+	    ;;
+	-w)
+	    shift
+	    diffOptions="${diffOptions:--x -u }${diffOptions:+ }-w"
+	    ;;
+	# Note: --ignore-eol-style seems to be handled internally by svn; it is
+	# not supported by GNU diff or colordiff. 
+	*)  break;;
+    esac
+done
+
+# Highlight diff output if available. 
 if which colordiff >/dev/null 2>&1; then
-    svn diff --diff-cmd colordiff "$@" | less --RAW-CONTROL-CHARS
+    svn diff "$diffOptions" --diff-cmd colordiff "$@" | less --RAW-CONTROL-CHARS
 else
-    svn diff "$@"
+    svn diff "$diffOptions" "$@"
 fi
