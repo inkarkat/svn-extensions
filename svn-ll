@@ -1,0 +1,5 @@
+#!/bin/sh
+## List revision number and author of the last commit. 
+
+# Omit the file size and date; a plain 'll' tells this, too. 
+svn ls -v "$@" | cut -c 1-20,44-
