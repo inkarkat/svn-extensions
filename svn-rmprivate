@@ -1,6 +1,16 @@
 #!/bin/sh
-## Remove unversioned files and empty directories, 
-## with -r also any unversioned directory trees. 
+
+printUsage()
+{
+    cat <<HELPTEXT
+Remove unversioned files and empty directories, 
+with -r also any unversioned directory trees. 
+Usage: "$(basename "$1")" [-r] [PATH...] [-?|-h|--help]
+HELPTEXT
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
 
 recursiveFlag=
 if [ "$1" = "-r" ]; then
