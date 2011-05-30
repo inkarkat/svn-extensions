@@ -1,2 +1,14 @@
 #!/bin/sh
+
+printUsage()
+{
+    cat <<HELPTEXT
+Diff with predecessor. 
+Usage: "$(basename "$1")" [TARGET[@REV]...] [-?|-h|--help]
+HELPTEXT
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
 svn-diff -r PREV "$@"
