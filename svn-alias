@@ -1,5 +1,15 @@
 #!/bin/sh
-## List all svn command extensions and newly defined commands. 
+
+printUsage()
+{
+    cat <<HELPTEXT
+List all svn command extensions and newly defined commands. 
+Usage: "$(basename "$1")" [-?|-h|--help]
+HELPTEXT
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
 
 scriptDir=$(dirname -- "$0")
 [ "$scriptDir" = "." ] && readonly scriptDir=$(dirname -- $(which -- "$0")) || readonly scriptDir=$(cd "$scriptDir" && echo "${PWD}") || { echo >&2 "ERROR: Cannot determine absolute script dirspec!"; exit 2; }
