@@ -5,7 +5,8 @@ printUsage()
     cat <<HELPTEXT
 Highlights diff output red/green. 
 With -b (ignore space change) and -w (ignore all white space) options. 
-Usage: "$(basename "#1")" [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
+Can also show statistics with --stat, --numstat and --shortstat. 
+Usage: "$(basename "#1")" [-b] [-w] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 case "$1" in
@@ -13,6 +14,13 @@ case "$1" in
 esac
 
 diffOptions=
+diffStatArgs=
+
+# Highlight diff output if available. 
+colordiffCommand=
+if which colordiff >/dev/null 2>&1; then
+    colordiffCommand='--diff-cmd colordiff'
+fi
 
 # Simplify setting common diff options (that do not overlap with svn options). 
 while [ $# -gt 0 ]
@@ -28,13 +36,24 @@ do
 	    ;;
 	# Note: --ignore-eol-style seems to be handled internally by svn; it is
 	# not supported by GNU diff or colordiff. 
+	--stat)
+	    shift
+	    diffStatArgs='-C'
+	    ;;
+	--numstat)
+	    shift
+	    diffStatArgs='-C -f0'
+	    ;;
+	--shortstat)
+	    shift
+	    diffStatArgs='-C -s'
+	    ;;
 	*)  break;;
     esac
 done
 
-# Highlight diff output if available. 
-if which colordiff >/dev/null 2>&1; then
-    svn diff "$diffOptions" --diff-cmd colordiff "$@" | less --RAW-CONTROL-CHARS
+if [ "$diffStatArgs" ]; then
+    svn diff "$diffOptions" "$@" | diffstat $diffStatArgs
 else
-    svn diff "$diffOptions" "$@"
+    svn diff "$diffOptions" $colordiffCommand "$@" | less --RAW-CONTROL-CHARS
 fi
