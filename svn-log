@@ -12,8 +12,9 @@ HELPTEXT
 mergeFilter()
 {
     sed -e '
+# Silently capture all header lines until the revision summary in pattern space. 
 /^revision r[0-9]\+$/ {
-    h
+    h	# This starts the header. 
     d
 }
 /^Author:/ {
@@ -21,23 +22,33 @@ mergeFilter()
     d
 }
 /^Date:/ {
-    N
-    H
-    d
-}
-/[Mm]erg\(e\|ed\|es\|ing\)\b/ {
-    s/^.*$/MERGE/
-    h
-    d
+    N		# Following line is empty. 
+    H		# Last header line to capture in pattern space. 
+    s/^.*$//	# Clear without printing.  
+    N		# Inspect revision summary. 
+    s/^\n//	# Undo effect of N; n cannot be used because it would print empty line. 
+    /[Mm]erg\(e\|ed\|es\|ing\)\b/ {
+	# Push special MERGE marker into pattern space. 
+	s/^.*$/MERGE/
+	h
+	d
+    }
+    # If the revision summary did not mention a merge, we continue in the script
+    # with the header in pattern space. 
 }
 
-x
+x   # Inspect pattern space. 
 /MERGE/ {
+    # Currently in merge revision, discard current line. 
     x
     d
 }
+
+# Not in merge revision; print header from pattern space once.  
 /^$/!p
 s/^.*$//
+
+# And print log line, too. 
 x
 '
 }
@@ -53,8 +64,7 @@ case "$1" in
     --no-merge)		shift; filter='mergeFilter';;
 esac
 
-#svn log "$@" | sed -e '
-cat /tmp/svn| sed -e '
+svn log "$@" | sed -e '
 /^r[0-9]\+/{
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
 }
