@@ -1,0 +1,34 @@
+#!/bin/sh
+
+printUsage()
+{
+    cat <<HELPTEXT
+One-line log messages with commit summary. 
+Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
+HELPTEXT
+}
+filter=cat
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+--no-merge)		shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
+esac
+
+svn log "$@" | sed -ne '
+/^r[0-9]\+/{
+    s/\(^r[0-9]\+\) *|[^|]\+| *\([^ |]\+\)[^|]*|.*/\1 \2 /
+    h
+}
+/^Changed paths:/,/^$/{
+    /^$/b print
+    d
+    b
+}
+/^$/b print
+b
+
+:print
+g
+N
+s/\n//g
+p
+' | $filter | less --RAW-CONTROL-CHARS
