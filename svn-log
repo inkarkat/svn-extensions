@@ -12,7 +12,7 @@ HELPTEXT
 mergeFilter()
 {
     sed -e '
-# Silently capture all header lines until the revision summary in hold space. 
+# Silently capture all header lines until the revision summary in pattern space. 
 /^revision r[0-9]\+$/ {
     h	# This starts the header. 
     d
@@ -23,30 +23,30 @@ mergeFilter()
 }
 /^Date:/ {
     N		# Following line is empty. 
-    H		# Last header line to capture in hold space. 
-    s/.*//	# Clear without printing.  
+    H		# Last header line to capture in pattern space. 
+    s/^.*$//	# Clear without printing.  
     N		# Inspect revision summary. 
     s/^\n//	# Undo effect of N; n cannot be used because it would print empty line. 
     /[Mm]erg\(e\|ed\|es\|ing\)\b/ {
-	# Push special MERGE marker into hold space. 
-	s/.*/MERGE/
+	# Push special MERGE marker into pattern space. 
+	s/^.*$/MERGE/
 	h
 	d
     }
     # If the revision summary did not mention a merge, we continue in the script
-    # with the header in hold space. 
+    # with the header in pattern space. 
 }
 
-x   # Inspect hold space. 
+x   # Inspect pattern space. 
 /MERGE/ {
     # Currently in merge revision, discard current line. 
     x
     d
 }
 
-# Not in merge revision; print header from hold space once.  
+# Not in merge revision; print header from pattern space once.  
 /^$/!p
-s/.*//
+s/^.*$//
 
 # And print log line, too. 
 x
@@ -54,11 +54,11 @@ x
 }
 
 filter=cat
-: ${COLOR_HEADER:=[36m}
-: ${COLOR_FILEADDED:=[32m}
-: ${COLOR_FILECHANGED:=[34m}
-: ${COLOR_FILEREMOVED:=[31m}
-: ${COLOR_RESET:=[0m}
+colorHeader='[36m'
+colorFileAdded='[32m'
+colorFileChanged='[34m'
+colorFileRemoved='[31m'
+colorReset='[0m'
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
     --no-merge)		shift; filter='mergeFilter';;
@@ -69,7 +69,7 @@ svn log "$@" | sed -e '
     # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
 }
-# Silently capture the changed file list in hold space. 
+# Silently capture the changed file list in pattern space. 
 /^Changed paths:/,/^$/ {
     /^Changed paths:/{
 	# Because this range consumes the empty line between the changed file
@@ -90,10 +90,10 @@ svn log "$@" | sed -e '
 # log -v"). 
 /^-\+$/g
 ' | $filter | sed -e "
-s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
+s/^revision r[0-9]\\+$/${colorHeader}\\0${colorReset}/
 /^Changed paths:/,/^\$/ {
-    s/^ \\+A .*\$/${COLOR_FILEADDED}\\0${COLOR_RESET}/
-    s/^ \\+M .*\$/${COLOR_FILECHANGED}\\0${COLOR_RESET}/
-    s/^ \\+R .*\$/${COLOR_FILEREMOVED}\\0${COLOR_RESET}/
+    s/^ \\+A .*\$/${colorFileAdded}\\0${colorReset}/
+    s/^ \\+M .*\$/${colorFileChanged}\\0${colorReset}/
+    s/^ \\+R .*\$/${colorFileRemoved}\\0${colorReset}/
 }
 " | less --RAW-CONTROL-CHARS
