@@ -12,7 +12,7 @@ HELPTEXT
 mergeFilter()
 {
     sed -e '
-# Silently capture all header lines until the revision summary in pattern space. 
+# Silently capture all header lines until the revision summary in hold space. 
 /^revision r[0-9]\+$/ {
     h	# This starts the header. 
     d
@@ -23,30 +23,30 @@ mergeFilter()
 }
 /^Date:/ {
     N		# Following line is empty. 
-    H		# Last header line to capture in pattern space. 
-    s/^.*$//	# Clear without printing.  
+    H		# Last header line to capture in hold space. 
+    s/.*//	# Clear without printing.  
     N		# Inspect revision summary. 
     s/^\n//	# Undo effect of N; n cannot be used because it would print empty line. 
     /[Mm]erg\(e\|ed\|es\|ing\)\b/ {
-	# Push special MERGE marker into pattern space. 
-	s/^.*$/MERGE/
+	# Push special MERGE marker into hold space. 
+	s/.*/MERGE/
 	h
 	d
     }
     # If the revision summary did not mention a merge, we continue in the script
-    # with the header in pattern space. 
+    # with the header in hold space. 
 }
 
-x   # Inspect pattern space. 
+x   # Inspect hold space. 
 /MERGE/ {
     # Currently in merge revision, discard current line. 
     x
     d
 }
 
-# Not in merge revision; print header from pattern space once.  
+# Not in merge revision; print header from hold space once.  
 /^$/!p
-s/^.*$//
+s/.*//
 
 # And print log line, too. 
 x
@@ -69,7 +69,7 @@ svn log "$@" | sed -e '
     # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
 }
-# Silently capture the changed file list in pattern space. 
+# Silently capture the changed file list in hold space. 
 /^Changed paths:/,/^$/ {
     /^Changed paths:/{
 	# Because this range consumes the empty line between the changed file
