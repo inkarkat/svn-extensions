@@ -5,40 +5,95 @@ printUsage()
     cat <<HELPTEXT
 Verbose log messages. 
 Use -v to include a list of changed files. 
-Usage: "$(basename "$1")" [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
-colorHeader='[36m'
-colorFileAdded='[32m'
-colorFileChanged='[34m'
-colorFileRemoved='[31m'
-colorReset='[0m'
+mergeFilter()
+{
+    sed -e '
+# Silently capture all header lines until the revision summary in hold space. 
+/^revision r[0-9]\+$/ {
+    h	# This starts the header. 
+    d
+}
+/^Author:/ {
+    H
+    d
+}
+/^Date:/ {
+    N		# Following line is empty. 
+    H		# Last header line to capture in hold space. 
+    s/.*//	# Clear without printing.  
+    N		# Inspect revision summary. 
+    s/^\n//	# Undo effect of N; n cannot be used because it would print empty line. 
+    /[Mm]erg\(e\|ed\|es\|ing\)\b/ {
+	# Push special MERGE marker into hold space. 
+	s/.*/MERGE/
+	h
+	d
+    }
+    # If the revision summary did not mention a merge, we continue in the script
+    # with the header in hold space. 
+}
+
+x   # Inspect hold space. 
+/MERGE/ {
+    # Currently in merge revision, discard current line. 
+    x
+    d
+}
+
+# Not in merge revision; print header from hold space once.  
+/^$/!p
+s/.*//
+
+# And print log line, too. 
+x
+'
+}
+
+filter=cat
+: ${COLOR_HEADER:=[36m}
+: ${COLOR_FILEADDED:=[32m}
+: ${COLOR_FILECHANGED:=[34m}
+: ${COLOR_FILEREMOVED:=[31m}
+: ${COLOR_RESET:=[0m}
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --no-merge)		shift; filter='mergeFilter';;
 esac
 
 svn log "$@" | sed -e '
 /^r[0-9]\+/{
+    # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
 }
+# Silently capture the changed file list in hold space. 
 /^Changed paths:/,/^$/ {
     /^Changed paths:/{
-	s/^/\n/
+	# Because this range consumes the empty line between the changed file
+	# list and the revision summary, it must be printed explicitly to
+	# maintain the spacing towards the header. 
+	a\
+
+	s/^/\n/	# Also start the stored block with a newline. 
+	# This starts the changed file list. 
 	h
 	d
-	b
     }
     H
     d
-    b
 }
+
+# At the end of the revision log, print the changed file list (in case of "svn
+# log -v"). 
 /^-\+$/g
-' | sed -e "
-s/^revision r[0-9]\\+$/${colorHeader}\\0${colorReset}/
+' | $filter | sed -e "
+s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
 /^Changed paths:/,/^\$/ {
-    s/^ \\+A .*\$/${colorFileAdded}\\0${colorReset}/
-    s/^ \\+M .*\$/${colorFileChanged}\\0${colorReset}/
-    s/^ \\+R .*\$/${colorFileRemoved}\\0${colorReset}/
+    s/^ \\+A .*\$/${COLOR_FILEADDED}\\0${COLOR_RESET}/
+    s/^ \\+M .*\$/${COLOR_FILECHANGED}\\0${COLOR_RESET}/
+    s/^ \\+R .*\$/${COLOR_FILEREMOVED}\\0${COLOR_RESET}/
 }
 " | less --RAW-CONTROL-CHARS
