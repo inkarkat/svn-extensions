@@ -9,6 +9,9 @@ Note: svn log option -v is not supported here, but also doesn't make sense here.
 HELPTEXT
 }
 filter=cat
+: ${COLOR_REVISION:=[36m}
+: ${COLOR_DATE:=[34m}
+: ${COLOR_RESET:=[0m}
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
     --no-merge)		shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
@@ -22,4 +25,6 @@ svn log "$@" | sed -ne '
     s/\n//g
     p
 }
-' | $filter | less --RAW-CONTROL-CHARS
+' | $filter | sed -e "
+    s/^\\([^ ]\+\\) \\([^ ]\+\\) \\(.*\\)/${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_DATE}\\2${COLOR_RESET} \\3/
+"| less --RAW-CONTROL-CHARS
