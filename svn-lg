@@ -5,20 +5,36 @@ printUsage()
     cat <<HELPTEXT
 One-line log messages with commit summary. 
 Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
+Note: svn log option -v is not supported here, but also doesn't make sense here. 
 HELPTEXT
 }
 filter=cat
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
---no-merge)		shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
-esac
+: ${COLOR_REVISION:=[36m}
+: ${COLOR_DATE:=[34m}
+: ${COLOR_RESET:=[0m}
+
+allargs=
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--no-merge)	shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
+	*)
+	    allargs="${allargs}${allargs:+ }'$1'"
+	    shift
+	    ;;
+    esac
+done
+eval set -- "$allargs"
 
 svn log "$@" | sed -ne '
 /^r[0-9]\+/{
-s/\(^r[0-9]\+\) *|[^|]\+| *\([^ |]\+\)[^|]*|.*/\1 \2 /
-N
-N
-s/\n//g
-p
+    s/\(^r[0-9]\+\) *|[^|]\+| *\([^ |]\+\)[^|]*|.*/\1 \2 /
+    N
+    N
+    s/\n//g
+    p
 }
-' | $filter | less --RAW-CONTROL-CHARS
+' | $filter | sed -e "
+    s/^\\([^ ]\+\\) \\([^ ]\+\\) \\(.*\\)/${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_DATE}\\2${COLOR_RESET} \\3/
+"| less --RAW-CONTROL-CHARS
