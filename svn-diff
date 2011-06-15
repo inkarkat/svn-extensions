@@ -22,6 +22,7 @@ if which colordiff >/dev/null 2>&1; then
     colordiffCommand='--diff-cmd colordiff'
 fi
 
+allargs=
 # Simplify setting common diff options (that do not overlap with svn options). 
 while [ $# -gt 0 ]
 do
@@ -48,12 +49,15 @@ do
 	    shift
 	    diffStatArgs='-C -s'
 	    ;;
-	*)  break;;
+	*)
+	    allargs="${allargs}${allargs:+ }'$1'"
+	    shift
+	    ;;
     esac
 done
 
 if [ "$diffStatArgs" ]; then
-    svn diff "$diffOptions" "$@" | diffstat $diffStatArgs
+    eval svn diff "$diffOptions" $allargs | diffstat $diffStatArgs
 else
-    svn diff "$diffOptions" $colordiffCommand "$@" | less --RAW-CONTROL-CHARS
+    eval svn diff "$diffOptions" $colordiffCommand $allargs | less --RAW-CONTROL-CHARS
 fi
