@@ -54,11 +54,11 @@ x
 }
 
 filter=cat
-: ${COLOR_HEADER:=[36m}
-: ${COLOR_FILEADDED:=[32m}
-: ${COLOR_FILECHANGED:=[34m}
-: ${COLOR_FILEREMOVED:=[31m}
-: ${COLOR_RESET:=[0m}
+: ${COLOR_HEADER:='[36m'}
+: ${COLOR_FILEADDED:='[32m'}
+: ${COLOR_FILECHANGED:='[34m'}
+: ${COLOR_FILEREMOVED:='[31m'}
+: ${COLOR_RESET:='[0m'}
 
 allargs=
 while [ $# -gt 0 ]
@@ -67,7 +67,7 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--no-merge)	shift; filter='mergeFilter';;
 	*)
-	    allargs="${allargs}${allargs:+ }'$1'"
+	    allargs="${allargs}${allargs:+' '}'$1'"
 	    shift
 	    ;;
     esac
