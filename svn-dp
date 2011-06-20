@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-Diff with predecessor, either current BASE revision to PREV, or
+Diff with predecessor, either current COMMITTED revision to PREV, or
 with -c REV revision REV to its predecessor. 
 Note: The [@REV] is only a revision peg for use on the server; you cannot
 specify a local revision with it. 
@@ -11,10 +11,14 @@ Usage: "$(basename "$1")" [-c|--change REV] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
-revisionRange='-r BASE:PREV'
+revisionRange='-r PREV:COMMITTED'
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
     --change|-c)	shift; revisionRange="--change $1"; shift;;
 esac
 
-svn-diff $revisionRange "$@"
+svnDiffCommand='svn diff'
+if which svn-diff >/dev/null 2>&1; then
+    svnDiffCommand='svn-diff'
+fi
+"$svnDiffCommand" $revisionRange "$@"
