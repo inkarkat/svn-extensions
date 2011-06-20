@@ -6,12 +6,15 @@ printUsage()
 Highlights diff output red/green. 
 With -b (ignore space change) and -w (ignore all white space) options. 
 Can also show statistics with --stat, --numstat and --shortstat. 
+
+Default is working copy to last commit; use
+-r PREV to diff working copy with previous commit and
+-r PREV:COMMITTED (or svn dp) to show change in previous commit, and
+-r REV:COMMITTED to show changes across revisions. 
+
 Usage: "$(basename "#1")" [-b] [-w] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-esac
 
 diffOptions=
 diffStatArgs=
@@ -27,6 +30,7 @@ allargs=
 while [ $# -gt 0 ]
 do
     case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	-b)
 	    shift
 	    diffOptions="${diffOptions:--x -u }${diffOptions:+ }-b"
@@ -55,9 +59,12 @@ do
 	    ;;
     esac
 done
+eval set -- "$allargs"
 
+# Note: diffOptions can be passed as a single argument "-x -u -b" as well as the
+# two-arg -x "-u -b", but not as individual arguments. 
 if [ "$diffStatArgs" ]; then
-    eval svn diff "$diffOptions" $allargs | diffstat $diffStatArgs
+    svn diff "$diffOptions" "$@" | diffstat $diffStatArgs
 else
-    eval svn diff "$diffOptions" $colordiffCommand $allargs | less --RAW-CONTROL-CHARS
+    svn diff "$diffOptions" $colordiffCommand "$@" | less --RAW-CONTROL-CHARS
 fi
