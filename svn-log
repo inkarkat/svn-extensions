@@ -57,11 +57,7 @@ x
 
 showNoMatch()
 {
-    # Going through the revision history (and the processing on Cygwin) takes
-    # some time... Print a temporary status to stderr that overwrites itself as
-    # the processing progresses. 
-    revision=$(head -n 1 "$1")
-    [ "$revision" ] && printf >&2 '%s\r' "${revision}"
+    echo >&2 "No match in $(head -n 1 "$1")"
 }
 grepFilter()
 {
@@ -79,14 +75,7 @@ grepFilter()
 /^Author:/d
 /^Date:/d
 /^Changed paths:/,/^revision r[0-9]\+$/d
-		' "$TMPFILE" | grep -q "$grepArgs"
-		if [ $? -eq 0 ]; then
-		    # Must do fine-grained colorization here so that the results
-		    # appear immediately, to avoid buffering in the pipe. 
-		    cat "$TMPFILE" | colorize
-		else 
-		    showNoMatch "$TMPFILE"
-		fi
+		' "$TMPFILE" | grep -q "$grepArgs" && cat "$TMPFILE" || showNoMatch "$TMPFILE"
 	    fi
 
 	    # Start a new temporary revision file. 
@@ -99,20 +88,8 @@ grepFilter()
     rm "$TMPFILE" 2>/dev/null
 }
 
-colorize()
-{
-    sed -e "
-s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
-/^Changed paths:/,/^\$/ {
-    s/^ \\+A .*\$/${COLOR_FILEADDED}\\0${COLOR_RESET}/
-    s/^ \\+M .*\$/${COLOR_FILECHANGED}\\0${COLOR_RESET}/
-    s/^ \\+R .*\$/${COLOR_FILEREMOVED}\\0${COLOR_RESET}/
-}
-"
-}
-
 mergeFilter=cat
-finalFilter=colorize
+grepFilter=cat
 grepArgs=
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_FILEADDED:='[32m'}
@@ -126,7 +103,7 @@ do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--no-merge)	shift; mergeFilter='mergeFilter';;
-	--grep)		shift; finalFilter='grepFilter'; grepArgs=$1; shift;;
+	--grep)		shift; grepFilter='grepFilter'; grepArgs=$1; shift;;
 	*)
 	    allargs="${allargs}${allargs:+ }'$1'"
 	    shift
@@ -135,7 +112,8 @@ do
 done
 eval set -- "$allargs"
 
-svn log "$@" | sed -e '
+#svn log "$@" | sed -e '
+cat /tmp/svn | sed -e '
 /^r[0-9]\+/{
     # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
@@ -160,4 +138,11 @@ svn log "$@" | sed -e '
 # At the end of the revision log, print the changed file list (in case of "svn
 # log -v"). 
 /^-\+$/g
-' | $mergeFilter | $finalFilter | less --RAW-CONTROL-CHARS
+' | $mergeFilter | $grepFilter | sed -e "
+s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
+/^Changed paths:/,/^\$/ {
+    s/^ \\+A .*\$/${COLOR_FILEADDED}\\0${COLOR_RESET}/
+    s/^ \\+M .*\$/${COLOR_FILECHANGED}\\0${COLOR_RESET}/
+    s/^ \\+R .*\$/${COLOR_FILEREMOVED}\\0${COLOR_RESET}/
+}
+" | less --RAW-CONTROL-CHARS
