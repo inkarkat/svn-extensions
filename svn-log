@@ -68,8 +68,7 @@ grepFilter()
     TMPFILE=/tmp/rentry
     rm "$TMPFILE" 2>/dev/null
 
-    while IFS='
-' read -r line
+    while read -r line
     do
 	if expr "$line" : '^revision r[0-9]\+$' >/dev/null; then
 	    if [ -r "$TMPFILE" ]; then
@@ -140,7 +139,6 @@ svn log "$@" | sed -e '
 /^r[0-9]\+/{
     # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
-    b
 }
 # Silently capture the changed file list in hold space. 
 /^Changed paths:/,/^$/ {
@@ -161,8 +159,5 @@ svn log "$@" | sed -e '
 
 # At the end of the revision log, print the changed file list (in case of "svn
 # log -v"). 
-/^-\+$/{ g; b }
-
-# Indent revision message. 
-s/^/    /
+/^-\+$/g
 ' | $mergeFilter | $finalFilter | less --RAW-CONTROL-CHARS
