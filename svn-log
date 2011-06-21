@@ -7,9 +7,7 @@ Verbose log messages.
 -v		Include a list of changed files. 
 --grep regexp   Limit the commits to ones with log message that matches the
 		specified pattern. 
---author regexp	Limit to commits by author. 
---no-merge	Exclude any commits that mention merge in the revision summary. 
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [--author regexp] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -57,19 +55,6 @@ x
 '
 }
 
-extractHeaderItem()
-{
-    sed -ne "s/^${1}: \\+//p" "$2"
-}
-extractRevisionMessage()
-{
-    sed -e '
-/^revision r[0-9]\+$/d
-/^Author:/d
-/^Date:/d
-/^Changed paths:/,/^revision r[0-9]\+$/d
-' "$1"
-}
 showNoMatch()
 {
     # Going through the revision history (and the processing on Cygwin) takes
@@ -88,23 +73,20 @@ grepFilter()
     do
 	if expr "$line" : '^revision r[0-9]\+$' >/dev/null; then
 	    if [ -r "$TMPFILE" ]; then
-		isSkip=
-
-		if [ "$authorArgs" ]; then
-		    extractHeaderItem 'Author' "$TMPFILE" | grep -q "$authorArgs" || isSkip='true'
-		fi
-		if [ "$grepArgs" ]; then
-		    # Filter away the revision header and changed file list, and
-		    # try to match the regexp in the remaining revision message. 
-		    extractRevisionMessage "$TMPFILE" | grep -q "$grepArgs" || isSkip='true'
-		fi
-
-		if [ "$isSkip" ]; then
-		    showNoMatch "$TMPFILE"
-		else 
+		# Filter away the revision header and changed file list, and
+		# try to match the regexp in the remaining revision message. 
+		sed -e '
+/^revision r[0-9]\+$/d
+/^Author:/d
+/^Date:/d
+/^Changed paths:/,/^revision r[0-9]\+$/d
+		' "$TMPFILE" | grep -q "$grepArgs"
+		if [ $? -eq 0 ]; then
 		    # Must do fine-grained colorization here so that the results
 		    # appear immediately, to avoid buffering in the pipe. 
 		    cat "$TMPFILE" | colorize
+		else 
+		    showNoMatch "$TMPFILE"
 		fi
 	    fi
 
@@ -118,11 +100,6 @@ grepFilter()
     rm "$TMPFILE" 2>/dev/null
 }
 
-: ${COLOR_HEADER:='[36m'}
-: ${COLOR_FILEADDED:='[32m'}
-: ${COLOR_FILECHANGED:='[34m'}
-: ${COLOR_FILEREMOVED:='[31m'}
-: ${COLOR_RESET:='[0m'}
 colorize()
 {
     sed -e "
@@ -138,7 +115,11 @@ s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
 mergeFilter=cat
 finalFilter=colorize
 grepArgs=
-authorArgs=
+: ${COLOR_HEADER:='[36m'}
+: ${COLOR_FILEADDED:='[32m'}
+: ${COLOR_FILECHANGED:='[34m'}
+: ${COLOR_FILEREMOVED:='[31m'}
+: ${COLOR_RESET:='[0m'}
 
 allargs=
 while [ $# -gt 0 ]
@@ -147,7 +128,6 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--no-merge)	shift; mergeFilter='mergeFilter';;
 	--grep)		shift; finalFilter='grepFilter'; grepArgs=$1; shift;;
-	--author)	shift; finalFilter='grepFilter'; authorArgs=$1; shift;;
 	*)
 	    allargs="${allargs}${allargs:+ }'$1'"
 	    shift
