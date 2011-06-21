@@ -14,22 +14,7 @@ HELPTEXT
 revisionRange='-r PREV:COMMITTED'
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-    --change|-c)	shift
-			# XXX: When supplying an URL target (i.e. server diff,
-			# not from working copy), the --old=URL option must be
-			# used and -r N:M instead of -c. 
-			if [ "${2%%/*}" = 'https:' ]; then
-			    revisionRange="-r $(($1 - 1)):${1} --old=$2"
-			    shift
-			else
-			    revisionRange="--change $1"
-			fi
-			shift
-			;;
+    --change|-c)	shift; revisionRange="--change $1"; shift;;
 esac
 
-svnDiffCommand='svn diff'
-if which svn-diff >/dev/null 2>&1; then
-    svnDiffCommand='svn-diff'
-fi
-"$svnDiffCommand" $revisionRange "$@"
+svn-wrapper diff $revisionRange "$@"
