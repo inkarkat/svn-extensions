@@ -4,18 +4,29 @@ printUsage()
 {
     cat <<HELPTEXT
 One-line log messages with commit summary. 
-Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
+--no-merge	Exclude any commits that mention merge in the revision summary. 
 Note: svn log option -v is not supported here, but also doesn't make sense here. 
+Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 filter=cat
-: ${COLOR_REVISION:=[36m}
-: ${COLOR_DATE:=[34m}
-: ${COLOR_RESET:=[0m}
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-    --no-merge)		shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
-esac
+: ${COLOR_REVISION:='[36m'}
+: ${COLOR_DATE:='[34m'}
+: ${COLOR_RESET:='[0m'}
+
+allargs=
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--no-merge)	shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
+	*)
+	    allargs="${allargs}${allargs:+ }'$1'"
+	    shift
+	    ;;
+    esac
+done
+eval set -- "$allargs"
 
 svn log "$@" | sed -ne '
 /^r[0-9]\+/{
