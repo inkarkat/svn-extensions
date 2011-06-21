@@ -4,9 +4,8 @@ printUsage()
 {
     cat <<HELPTEXT
 One-line log messages with commit summary. 
---no-merge	Exclude any commits that mention merge in the revision summary. 
-Note: svn log option -v is not supported here, but also doesn't make sense here. 
 Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
+Note: svn log option -v is not supported here, but also doesn't make sense here. 
 HELPTEXT
 }
 filter=cat
