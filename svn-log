@@ -4,8 +4,12 @@ printUsage()
 {
     cat <<HELPTEXT
 Verbose log messages. 
-Use -v to include a list of changed files. 
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
+-v		Include a list of changed files. 
+--grep regexp   Limit the commits to ones with log message that matches the
+		specified pattern. 
+--author regexp	Limit to commits by author. 
+--no-merge	Exclude any commits that mention merge in the revision summary. 
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [--author regexp] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -53,19 +57,113 @@ x
 '
 }
 
-filter=cat
+extractHeaderItem()
+{
+    sed -ne "s/^${1}: \\+//p" "$2"
+}
+extractRevisionMessage()
+{
+    sed -e '
+/^revision r[0-9]\+$/d
+/^Author:/d
+/^Date:/d
+/^Changed paths:/,/^revision r[0-9]\+$/d
+' "$1"
+}
+showNoMatch()
+{
+    # Going through the revision history (and the processing on Cygwin) takes
+    # some time... Print a temporary status to stderr that overwrites itself as
+    # the processing progresses. 
+    revision=$(head -n 1 "$1")
+    # Note: Print trailing space to clear previous status when the number of
+    # digits in the revision decreases. 
+    [ "$revision" ] && printf >&2 '%s\r' "${revision} "
+}
+grepFilter()
+{
+    TMPFILE=/tmp/rentry
+    rm "$TMPFILE" 2>/dev/null
+
+    while IFS='
+' read -r line
+    do
+	if expr "$line" : '^revision r[0-9]\+$' >/dev/null; then
+	    if [ -r "$TMPFILE" ]; then
+		isSkip=
+
+		if [ "$authorArgs" ]; then
+		    extractHeaderItem 'Author' "$TMPFILE" | grep -q "$authorArgs" || isSkip='true'
+		fi
+		if [ "$grepArgs" ]; then
+		    # Filter away the revision header and changed file list, and
+		    # try to match the regexp in the remaining revision message. 
+		    extractRevisionMessage "$TMPFILE" | grep -q "$grepArgs" || isSkip='true'
+		fi
+
+		if [ "$isSkip" ]; then
+		    showNoMatch "$TMPFILE"
+		else 
+		    if [ "$grepArgs" -a "$grepOptions" ]; then
+			# Let (another pass of) grep highlight the matches. 
+			# We include all lines (but without highlighting) with
+			# the regexp /$/. 
+			grep $grepOptions -e "$grepArgs" -e '$' "$TMPFILE"
+		    else
+			cat "$TMPFILE"
+		    fi | colorize
+		    # Must do fine-grained colorization here so that the results
+		    # appear immediately, to avoid buffering in the pipe. 
+		fi
+	    fi
+
+	    # Start a new temporary revision file. 
+	    echo "$line" > "$TMPFILE"
+	else
+	    echo "$line" >> "$TMPFILE"
+	fi
+    done
+
+    rm "$TMPFILE" 2>/dev/null
+}
+
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_FILEADDED:='[32m'}
 : ${COLOR_FILECHANGED:='[34m'}
 : ${COLOR_FILEREMOVED:='[31m'}
 : ${COLOR_RESET:='[0m'}
+colorize()
+{
+    sed -e "
+s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
+/^Changed paths:/,/^\$/ {
+    s/^ \\+A .*\$/${COLOR_FILEADDED}\\0${COLOR_RESET}/
+    s/^ \\+M .*\$/${COLOR_FILECHANGED}\\0${COLOR_RESET}/
+    s/^ \\+R .*\$/${COLOR_FILEREMOVED}\\0${COLOR_RESET}/
+}
+"
+}
+
+mergeFilter=cat
+finalFilter=colorize
+grepArgs=
+grepOptions=
+case "$GREP_OPTIONS" in
+    # The user prefers highlighting of grep matches; enable this in here, too,
+    # even though our grep is in a pipe. 
+    *--color=auto*) grepOptions='--color=always';;
+    *--color=always*) grepOptions='--color=always';;
+esac
+authorArgs=
 
 allargs=
 while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--no-merge)	shift; filter='mergeFilter';;
+	--no-merge)	shift; mergeFilter='mergeFilter';;
+	--grep)		shift; finalFilter='grepFilter'; grepArgs=$1; shift;;
+	--author)	shift; finalFilter='grepFilter'; authorArgs=$1; shift;;
 	*)
 	    allargs="${allargs}${allargs:+ }'$1'"
 	    shift
@@ -78,6 +176,7 @@ svn log "$@" | sed -e '
 /^r[0-9]\+/{
     # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
+    b
 }
 # Silently capture the changed file list in hold space. 
 /^Changed paths:/,/^$/ {
@@ -98,12 +197,8 @@ svn log "$@" | sed -e '
 
 # At the end of the revision log, print the changed file list (in case of "svn
 # log -v"). 
-/^-\+$/g
-' | $filter | sed -e "
-s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
-/^Changed paths:/,/^\$/ {
-    s/^ \\+A .*\$/${COLOR_FILEADDED}\\0${COLOR_RESET}/
-    s/^ \\+M .*\$/${COLOR_FILECHANGED}\\0${COLOR_RESET}/
-    s/^ \\+R .*\$/${COLOR_FILEREMOVED}\\0${COLOR_RESET}/
-}
-" | less --RAW-CONTROL-CHARS
+/^-\+$/{ g; b }
+
+# Indent revision message. 
+s/^/    /
+' | $mergeFilter | $finalFilter | less --RAW-CONTROL-CHARS
