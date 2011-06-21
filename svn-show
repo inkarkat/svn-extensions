@@ -13,4 +13,4 @@ case "$1" in
 esac
 [ $# -eq 0 ] && { echo >&2 "ERROR: Must specify REV."; printUsage "$0"; exit 1; }
 
-(svn log --incremental -c "$@" && svn diff -c "$@") | less --RAW-CONTROL-CHARS
+(svn-wrapper log --incremental -c "$@" && svn-wrapper diff -c "$@") | less --RAW-CONTROL-CHARS
