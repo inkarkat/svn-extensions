@@ -76,9 +76,7 @@ showNoMatch()
     # some time... Print a temporary status to stderr that overwrites itself as
     # the processing progresses. 
     revision=$(head -n 1 "$1")
-    # Note: Print trailing space to clear previous status when the number of
-    # digits in the revision decreases. 
-    [ "$revision" ] && printf >&2 '%s\r' "${revision} "
+    [ "$revision" ] && printf >&2 '%s\r' "${revision}"
 }
 grepFilter()
 {
@@ -104,16 +102,9 @@ grepFilter()
 		if [ "$isSkip" ]; then
 		    showNoMatch "$TMPFILE"
 		else 
-		    if [ "$grepArgs" -a "$grepOptions" ]; then
-			# Let (another pass of) grep highlight the matches. 
-			# We include all lines (but without highlighting) with
-			# the regexp /$/. 
-			grep $grepOptions -e "$grepArgs" -e '$' "$TMPFILE"
-		    else
-			cat "$TMPFILE"
-		    fi | colorize
 		    # Must do fine-grained colorization here so that the results
 		    # appear immediately, to avoid buffering in the pipe. 
+		    cat "$TMPFILE" | colorize
 		fi
 	    fi
 
@@ -147,13 +138,6 @@ s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
 mergeFilter=cat
 finalFilter=colorize
 grepArgs=
-grepOptions=
-case "$GREP_OPTIONS" in
-    # The user prefers highlighting of grep matches; enable this in here, too,
-    # even though our grep is in a pipe. 
-    *--color=auto*) grepOptions='--color=always';;
-    *--color=always*) grepOptions='--color=always';;
-esac
 authorArgs=
 
 allargs=
