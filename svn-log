@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/bash
+
+shopt -qs extglob 2>/dev/null
 
 printUsage()
 {
@@ -87,40 +89,43 @@ grepFilter()
     while IFS='
 ' read -r line
     do
-	if expr "$line" : '^revision r[0-9]\+$' >/dev/null; then
-	    if [ -r "$TMPFILE" ]; then
-		isSkip=
+	case "$line" in
+	    revision\ r+([0-9]))
+		if [ -r "$TMPFILE" ]; then
+		    isSkip=
 
-		if [ "$authorArgs" ]; then
-		    extractHeaderItem 'Author' "$TMPFILE" | grep -q "$authorArgs" || isSkip='true'
-		fi
-		if [ "$grepArgs" ]; then
-		    # Filter away the revision header and changed file list, and
-		    # try to match the regexp in the remaining revision message. 
-		    extractRevisionMessage "$TMPFILE" | grep -q "$grepArgs" || isSkip='true'
+		    if [ "$authorArgs" ]; then
+			extractHeaderItem 'Author' "$TMPFILE" | grep -q "$authorArgs" || isSkip='true'
+		    fi
+		    if [ "$grepArgs" ]; then
+			# Filter away the revision header and changed file list, and
+			# try to match the regexp in the remaining revision message. 
+			extractRevisionMessage "$TMPFILE" | grep -q "$grepArgs" || isSkip='true'
+		    fi
+
+		    if [ "$isSkip" ]; then
+			showNoMatch "$TMPFILE"
+		    else 
+			if [ "$grepArgs" -a "$grepOptions" ]; then
+			    # Let (another pass of) grep highlight the matches. 
+			    # We include all lines (but without highlighting) with
+			    # the regexp /$/. 
+			    grep $grepOptions -e "$grepArgs" -e '$' "$TMPFILE"
+			else
+			    cat "$TMPFILE"
+			fi | colorize
+			# Must do fine-grained colorization here so that the results
+			# appear immediately, to avoid buffering in the pipe. 
+		    fi
 		fi
 
-		if [ "$isSkip" ]; then
-		    showNoMatch "$TMPFILE"
-		else 
-		    if [ "$grepArgs" -a "$grepOptions" ]; then
-			# Let (another pass of) grep highlight the matches. 
-			# We include all lines (but without highlighting) with
-			# the regexp /$/. 
-			grep $grepOptions -e "$grepArgs" -e '$' "$TMPFILE"
-		    else
-			cat "$TMPFILE"
-		    fi | colorize
-		    # Must do fine-grained colorization here so that the results
-		    # appear immediately, to avoid buffering in the pipe. 
-		fi
-	    fi
-
-	    # Start a new temporary revision file. 
-	    echo "$line" > "$TMPFILE"
-	else
-	    echo "$line" >> "$TMPFILE"
-	fi
+		# Start a new temporary revision file. 
+		echo "$line" > "$TMPFILE"
+		;;
+	    *)
+		echo "$line" >> "$TMPFILE"
+		;;
+	esac
     done
 
     rm "$TMPFILE" 2>/dev/null
@@ -171,7 +176,8 @@ do
 done
 eval set -- "$allargs"
 
-svn log "$@" | sed -e '
+#svn log "$@" | sed -e '
+cat /tmp/svnlog | sed -e '
 /^r[0-9]\+/{
     # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
