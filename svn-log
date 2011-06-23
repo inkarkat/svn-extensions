@@ -76,12 +76,13 @@ showNoMatch()
     # some time... Print a temporary status to stderr that overwrites itself as
     # the processing progresses. 
     revision=$(head -n 1 "$1")
-    [ "$revision" ] && printf >&2 '%s\r' "${revision}"
+    # Note: Print trailing space to clear previous status when the number of
+    # digits in the revision decreases. 
+    [ "$revision" ] && printf >&2 '%s\r' "${revision} "
 }
 grepFilter()
 {
-    TMPFILE=/tmp/rentry
-    rm "$TMPFILE" 2>/dev/null
+    TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
 
     while IFS='
 ' read -r line
