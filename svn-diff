@@ -64,7 +64,7 @@ eval set -- "$allargs"
 # Note: diffOptions can be passed as a single argument "-x -u -b" as well as the
 # two-arg -x "-u -b", but not as individual arguments. 
 if [ "$diffStatArgs" ]; then
-    eval svn diff "$diffOptions" '"$@"' | diffstat $diffStatArgs
+    svn diff "$diffOptions" "$@" | diffstat $diffStatArgs
 else
-    eval svn diff "$diffOptions" '$colordiffCommand "$@"' | less --RAW-CONTROL-CHARS
+    svn diff "$diffOptions" $colordiffCommand "$@" | less --RAW-CONTROL-CHARS
 fi
