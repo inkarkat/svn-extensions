@@ -77,15 +77,15 @@ showNoMatch()
     # Going through the revision history (and the processing on Cygwin) takes
     # some time... Print a temporary status to stderr that overwrites itself as
     # the processing progresses. 
-    revision=$(head -n 1 "$1")
     # Note: Print trailing space to clear previous status when the number of
     # digits in the revision decreases. 
-    [ "$revision" ] && printf >&2 '%s\r' "${revision} "
+    [ "$1" ] && printf >&2 '%s\r' "${1} "
 }
 grepFilter()
 {
     TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
 
+    revision=
     while IFS='
 ' read -r line
     do
@@ -104,7 +104,7 @@ grepFilter()
 		    fi
 
 		    if [ "$isSkip" ]; then
-			showNoMatch "$TMPFILE"
+			showNoMatch "$revision"
 		    else 
 			if [ "$grepArgs" -a "$grepOptions" ]; then
 			    # Let (another pass of) grep highlight the matches. 
@@ -119,6 +119,7 @@ grepFilter()
 		    fi
 		fi
 
+		revision=$line
 		# Start a new temporary revision file. 
 		echo "$line" > "$TMPFILE"
 		;;
@@ -176,8 +177,7 @@ do
 done
 eval set -- "$allargs"
 
-#svn log "$@" | sed -e '
-cat /tmp/svnlog | sed -e '
+svn log "$@" | sed -e '
 /^r[0-9]\+/{
     # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
