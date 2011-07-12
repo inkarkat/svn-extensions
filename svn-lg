@@ -4,15 +4,21 @@ printUsage()
 {
     cat <<HELPTEXT
 One-line log messages with commit summary. 
-Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
+--no-merge	Exclude any commits that mention merge in the revision summary. 
 Note: svn log option -v is not supported here, but also doesn't make sense here. 
+Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
-filter=cat
+
 : ${COLOR_REVISION:='[36m'}
 : ${COLOR_DATE:='[34m'}
 : ${COLOR_RESET:='[0m'}
+colorize()
+{
+    sed -e "s/^\\([^ ]\+\\) \\([^ ]\+\\) \\(.*\\)/${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_DATE}\\2${COLOR_RESET} \\3/"
+}
 
+filter=cat
 allargs=
 while [ $# -gt 0 ]
 do
@@ -35,6 +41,4 @@ svn log "$@" | sed -ne '
     s/\n//g
     p
 }
-' | $filter | sed -e "
-    s/^\\([^ ]\+\\) \\([^ ]\+\\) \\(.*\\)/${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_DATE}\\2${COLOR_RESET} \\3/
-"| less --RAW-CONTROL-CHARS
+' | $filter | colorize | less --RAW-CONTROL-CHARS
