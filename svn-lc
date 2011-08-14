@@ -1,0 +1,23 @@
+#!/bin/sh
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show logs together with diff between commits. 
+Note: If you supply -c|--change REV, you can just as well use "svn show REV". 
+Usage: "$(basename "$1")" [-r|--revision ARG] [-l|--limit ARG] [PATH] [-?|-h|--help]
+HELPTEXT
+}
+
+revisionRangeArgs=
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    -c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+    -r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+    -l|--limit)		revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+esac
+
+(eval svn log --xml --with-no-revprops $revisionRangeArgs '"$@"' || echo '<log></log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n | while read revision
+do
+    svn-wrapper log --incremental -c "$revision" "$@" && svn-wrapper diff -c "$revision" "$@"
+done | less --RAW-CONTROL-CHARS
