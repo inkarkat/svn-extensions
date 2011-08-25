@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
@@ -25,7 +25,7 @@ if which colordiff >/dev/null 2>&1; then
     colordiffCommand='--diff-cmd colordiff'
 fi
 
-allargs=
+typeset -a allargs=()
 # Simplify setting common diff options (that do not overlap with svn options). 
 while [ $# -gt 0 ]
 do
@@ -54,17 +54,16 @@ do
 	    diffStatArgs='-C -s'
 	    ;;
 	*)
-	    allargs="${allargs}${allargs:+ }'$1'"
+	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
-eval set -- "$allargs"
 
 # Note: diffOptions can be passed as a single argument "-x -u -b" as well as the
 # two-arg -x "-u -b", but not as individual arguments. 
 if [ "$diffStatArgs" ]; then
-    svn diff "$diffOptions" "$@" | diffstat $diffStatArgs
+    svn diff "$diffOptions" "${allargs[@]}" | diffstat $diffStatArgs
 else
-    svn diff "$diffOptions" $colordiffCommand "$@" | less --RAW-CONTROL-CHARS
+    svn diff "$diffOptions" $colordiffCommand "${allargs[@]}" | less --RAW-CONTROL-CHARS
 fi
