@@ -11,7 +11,9 @@ Verbose log messages.
 		specified pattern. 
 --author regexp	Limit to commits by author. 
 --no-merge	Exclude any commits that mention merge in the revision summary. 
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [--author regexp] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
+--server	Instead of local history, only list server revisions that you
+		don't have yet. 
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [--author regexp] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -160,6 +162,7 @@ case "$GREP_OPTIONS" in
     *--color=always*) grepOptions='--color=always';;
 esac
 authorArgs=
+isServerRevisions=
 
 typeset -a allargs=()
 while [ $# -gt 0 ]
@@ -169,12 +172,16 @@ do
 	--no-merge)	shift; mergeFilter='mergeFilter';;
 	--grep)		shift; finalFilter='grepFilter'; grepArgs=$1; shift;;
 	--author)	shift; finalFilter='grepFilter'; authorArgs=$1; shift;;
+	--server)	shift; isServerRevisions='true';;
 	*)
 	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
+if [ "$isServerRevisions" ]; then
+    allargs+=($(svn-serverrevs --getargs))
+fi
 
 svn log "${allargs[@]}" | sed -e '
 /^r[0-9]\+/{
