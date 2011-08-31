@@ -161,7 +161,7 @@ case "$GREP_OPTIONS" in
 esac
 authorArgs=
 
-allargs=
+typeset -a allargs=()
 while [ $# -gt 0 ]
 do
     case "$1" in
@@ -170,14 +170,13 @@ do
 	--grep)		shift; finalFilter='grepFilter'; grepArgs=$1; shift;;
 	--author)	shift; finalFilter='grepFilter'; authorArgs=$1; shift;;
 	*)
-	    allargs="${allargs}${allargs:+ }'$1'"
+	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
-eval set -- "$allargs"
 
-svn log "$@" | sed -e '
+svn log "${allargs[@]}" | sed -e '
 /^r[0-9]\+/{
     # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
