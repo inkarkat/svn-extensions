@@ -1,23 +1,64 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
     cat <<HELPTEXT
 Show logs together with diff between commits. 
 Note: If you supply -c|--change REV, you can just as well use "svn show REV". 
+--grep regexp   Limit the commits to ones with log message that matches the
+		specified pattern. 
+--author regexp	Limit to commits by author. 
+#--no-merge	Exclude any commits that mention merge in the revision summary. 
 Usage: "$(basename "$1")" [-r|--revision ARG] [-l|--limit ARG] [PATH] [-?|-h|--help]
 HELPTEXT
 }
 
-revisionRangeArgs=
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-    -c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-    -r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-    -l|--limit)		revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-esac
+getRevisions()
+{
+    typeset xmlFilter=
+    if [ "$authorArgs" ]; then
+	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'contains(author,\"${authorArgs}\")'"
+    fi
+    if [ "$grepArgs" ]; then
+	# XXX: Need matches() XSLT 2 function for regexp-based pattern matching.
+	# Unfortunately, this isn't yet supported by xmlstarlet / libxslt. 
+	#xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'matches(msg,\"${grepArgs}\")'"
+	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'contains(msg,\"${grepArgs}\")'"
+    fi
+    #if [ "$isMergeFilter" ]; then
+    #	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'matches(msg,\"[Mm]erg\\(e\\|ed\\|es\\|ing\\)\\b\")'"
+    #fi
 
-(eval svn log --xml --with-no-revprops $revisionRangeArgs '"$@"' || echo '<log></log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n | while read revision
+    if [ "$xmlFilter" ]; then
+	(eval "svn log --xml $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
+    else
+	(eval "svn log --xml --with-no-revprops $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n
+    fi
+}
+
+isMergeFilter=
+authorArgs=
+grepArgs=
+revisionRangeArgs=
+typeset -a allargs=()
+while [ $# -gt 0 ]
 do
-    svn-wrapper log --incremental -c "$revision" "$@" && svn-wrapper diff -c "$revision" "$@"
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	-c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+	-l|--limit)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+	#--no-merge)	shift; isMergeFilter=true;;
+	--grep)		shift; grepArgs=$1; shift;;
+	--author)	shift; authorArgs=$1; shift;;
+	*)
+	    allargs+=("$1")
+	    shift
+	    ;;
+    esac
+done
+
+getRevisions | while read revision
+do
+    svn-wrapper log --incremental -c "$revision" "${allargs[@]}" && svn-wrapper diff -c "$revision" "${allargs[@]}"
 done | less --RAW-CONTROL-CHARS
