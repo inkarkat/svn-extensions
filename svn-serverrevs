@@ -1,0 +1,24 @@
+#!/bin/bash
+set -o pipefail
+
+isGetargs=
+if [ "$1" == "--getargs" ]; then
+    isGetargs='true'
+    shift
+fi
+
+repositoryUrl=$(svn info "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $? 
+wcRevision=$(svn info "$@" | sed -n -e 's/^Revision: \(.*\)$/\1/p') || exit $? 
+
+if [ "$isGetargs" ]; then
+    echo "-r HEAD:$((wcRevision + 1)) $repositoryUrl"
+    exit
+fi
+
+lastLocalRevision=$(svn info "$@" | sed -n -e 's/^Last Changed Rev: \(.*\)$/\1/p') || exit $? 
+lastRepoRevision=$(svn info "$@" "$repositoryUrl" | sed -n -e 's/^Last Changed Rev: \(.*\)$/\1/p') || exit $?
+if [ $lastLocalRevision -eq $lastRepoRevision ]; then
+    echo "You have the latest revision r$lastLocalRevision that is also on the server."
+else
+    echo "You are $((lastRepoRevision - lastLocalRevision)) revision(s) behind the server, which has r$lastRepoRevision"
+fi
