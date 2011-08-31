@@ -1,24 +1,14 @@
 #!/bin/bash
 set -o pipefail
 
-: ${COLOR_YOUR:='[36m'}
-: ${COLOR_RESET:='[0m'}
-colorize()
-{
-    sed -e "s/^Your .*$/${COLOR_YOUR}\\0${COLOR_RESET}/"
-}
+lastLocalRevision=$(svn info "$@" | sed -n -e 's/^Last Changed Rev: \(.*\)$/\1/p') || exit $? 
+repositoryUrl=$(svn info "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $? 
 
 TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
-svn info "$@" | sed -e 's/^/Your   /' > "$TMPFILE" || exit 1 
-lastLocalRevision=$(sed -n -e 's/^Your * Last Changed Rev: \(.*\)$/\1/p' "$TMPFILE")
-repositoryUrl=$(sed -n -e 's/^Your * URL: \(.*\)$/\1/p' "$TMPFILE")
+lastRepoRevision=$(svn info "$@" "$repositoryUrl" | tee "$TMPFILE" | sed -n -e 's/^Last Changed Rev: \(.*\)$/\1/p') || exit $?
 
-svn info "$@" "$repositoryUrl" | sed -e 's/^/Server /' >> "$TMPFILE" || exit 1
-lastRepoRevision=$(sed -n -e 's/^Server Last Changed Rev: \(.*\)$/\1/p' "$TMPFILE")
-
-GREP_OPTIONS= grep -e '^Server URL: ' "$TMPFILE"
-sort -b -k2,2 "$TMPFILE" | GREP_OPTIONS= grep -e 'Revision: ' | colorize 
-sort -b -k2,4 "$TMPFILE" | GREP_OPTIONS= grep -e 'Last Changed ' | colorize 
+GREP_OPTIONS=
+grep -e '^URL: ' -e '^Revision: ' -e '^Last Changed ' "$TMPFILE"
 echo
 if [ $lastLocalRevision -eq $lastRepoRevision ]; then
     echo "You have the latest revision r$lastLocalRevision that is also on the server."
