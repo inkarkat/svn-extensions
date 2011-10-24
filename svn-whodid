@@ -11,12 +11,11 @@ HELPTEXT
 }
 
 : ${COLOR_REVISION:='[36m'}
-: ${COLOR_AUTHOR:='[34m'}
-: ${COLOR_COUNT:='[34m'}
+: ${COLOR_DATE:='[34m'}
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    sed -e 's/^\([^ ]\+\)\(.*(\)\([0-9]\+\)\():\)$/'"${COLOR_AUTHOR}\\1${COLOR_RESET}\\2${COLOR_COUNT}\\3${COLOR_RESET}\\4/"
+    sed -e "s/^\\([^ ]\+\\) \\([^ ]\+\\) \\(.*\\)/${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_DATE}\\2${COLOR_RESET} \\3/"
 }
 
 typeset filter=cat
@@ -33,41 +32,26 @@ do
     esac
 done
 
-svn log "${allargs[@]}" | sed -ne '
-/^r[0-9]\+/{
-    s/\(^r[0-9]\+\) *| *\([^ |]\+\) *| *[^ |]\+[^|]*|.*/\2 | \1 | /
-    N
-    N
-    s/\n//g
-    p
-}
-' | $filter | awk '
-BEGIN {
-    FS = " \\| "
-}
+# svn log "${allargs[@]}" | sed -ne '
+# /^r[0-9]\+/{
+#     s/\(^r[0-9]\+\) *| *\([^ |]\+\) *| *[^ |]\+[^|]*|.*/\2 | \1: /
+#     N
+#     N
+#     s/\n//g
+#     p
+# }
+# ' | $filter
+
+cat /tmp/svn | awk -F\| '
 {
     if (NF == 0)
 	next
-
-    commitCount[$1]++
-    if (highestRev[$1] == "")
-	highestRev[$1] = $2
-    commits[$1] = commits[$1] "\n      " $2 ": " substr($0, index($0, $2) + 3 + length($2))
+    cnt[$1]++
+    commits[$1] = commits[$1] "\n      " $2
 }
 END {
-    # The hash from author to commit count must be reverted, so that we can sort
-    # by index. Since that is not a one-to-one mapping, we add the highest
-    # revision number to the key to make it unique. This also makes the
-    # (reverse-sorted) output print the author with the highest revision number
-    # first when multiple authors have the same commit count. 
-    for (i in commitCount) {
-	flipped[sprintf("%04d %s", commitCount[i], highestRev[i])] = i
-    }
-
-    n = asorti(flipped, dest)
-    for (j = n; j > 0; j--) {
-	author = flipped[dest[j]]
-	print author " (" commitCount[author] "):" commits[author]
+    for (i in commits) { 
+	print i "(" cnt[i] "):" commits[i]
     }
 }
-' | colorize | less --RAW-CONTROL-CHARS
+' | less --RAW-CONTROL-CHARS
