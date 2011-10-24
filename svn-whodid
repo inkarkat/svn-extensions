@@ -47,11 +47,23 @@ cat /tmp/svn | awk -F\| '
     if (NF == 0)
 	next
     cnt[$1]++
-    commits[$1] = commits[$1] "\n      " $2
+    if (highestRev[$1] == "")
+	highestRev[$1] = $2
+    commits[$1] = commits[$1] "\n      " $2 ": " $3
 }
 END {
-    for (i in commits) { 
-	print i "(" cnt[i] "):" commits[i]
+    for (i in cnt) {
+	rev[sprintf("%04d %s", cnt[i], highestRev[i])] = i
+    }
+
+    for (i in rev) { 
+	print i
+    }
+
+    n = asorti(rev, dest)
+    for (j = n; j > 0; j--) {
+	author = rev[dest[j]]
+	print author "(" cnt[author] "):" commits[author]
     }
 }
 ' | less --RAW-CONTROL-CHARS
