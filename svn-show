@@ -12,5 +12,7 @@ case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 [ $# -eq 0 ] && { echo >&2 "ERROR: Must specify REV."; printUsage "$0"; exit 1; }
+revision=$1
+shift
 
-(svn-wrapper log --incremental -c "$@" && svn-wrapper diff -c "$@") | less --RAW-CONTROL-CHARS
+(svn-wrapper log --incremental -c "$revision" "$@" && svn-wrapper diff -c "$revision" "$@") | less --RAW-CONTROL-CHARS
