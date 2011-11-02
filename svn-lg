@@ -39,7 +39,7 @@ if [ "$isServerRevisions" ]; then
     allargs+=($(svn-serverrevs))
 fi
 
-svn log "${allargs[@]}" | sed -ne '
+svn log --non-interactive "${allargs[@]}" | sed -ne '
 /^r[0-9]\+/{
     s/\(^r[0-9]\+\) *|[^|]\+| *\([^ |]\+\)[^|]*|.*/\1 \2 /
     N
