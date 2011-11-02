@@ -33,11 +33,11 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	-b)
 	    shift
-	    diffOptions="${diffOptions:--x -u }${diffOptions:+ }-b"
+	    diffOptions="${diffOptions}${diffOptions:+ }-b"
 	    ;;
 	-w)
 	    shift
-	    diffOptions="${diffOptions:--x -u }${diffOptions:+ }-w"
+	    diffOptions="${diffOptions}${diffOptions:+ }-w"
 	    ;;
 	# Note: --ignore-eol-style seems to be handled internally by svn; it is
 	# not supported by GNU diff or colordiff. 
@@ -62,8 +62,11 @@ done
 
 # Note: diffOptions can be passed as a single argument "-x -u -b" as well as the
 # two-arg -x "-u -b", but not as individual arguments. 
+# Note: Must not pass an empty "" argument to svn, or the filtering for TARGET
+# doesn't work any more. 
+[ "$diffOptions" ] && svnDiffOptions="-x \"-u ${diffOptions}\""
 if [ "$diffStatArgs" ]; then
-    svn diff "$diffOptions" "${allargs[@]}" | diffstat $diffStatArgs
+    eval svn diff $svnDiffOptions '"${allargs[@]}"' | diffstat $diffStatArgs
 else
-    svn diff "$diffOptions" $colordiffCommand "${allargs[@]}" | less --RAW-CONTROL-CHARS
+    eval svn diff $svnDiffOptions '$colordiffCommand "${allargs[@]}"' | less --RAW-CONTROL-CHARS
 fi
