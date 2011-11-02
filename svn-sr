@@ -25,7 +25,7 @@ cleanup()
 {
     rm "$TMPFILE" 2>/dev/null
 }
-trap 'cleanup' 0
+trap 'cleanup' EXIT
 
 
 svn info "$@" | sed -e 's/^/Your   /' > "$TMPFILE" || exit 1 
