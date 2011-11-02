@@ -18,6 +18,12 @@ scriptDir=$(dirname -- "$0")
 for svnalias in "$scriptDir/"svn-*
 do
     [ -x "$svnalias" ] || continue
+
+    # Filter out backup files. 
+    case "$(basename -- "$svnalias")" in
+	    *.[1-2][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z])    continue;;
+    esac 
+
     echo "[01m${svnalias##*svn-}[0m"
-    sed -ne '/^## /s/^## /\t/p' "$svnalias"
-done
+    sed -e '1,/<<HELPTEXT$/d;/^Usage: /d;/^HELPTEXT$/{s/.*//;q}' "$svnalias"
+done | less --RAW-CONTROL-CHARS
