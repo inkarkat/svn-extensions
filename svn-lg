@@ -39,7 +39,7 @@ if [ "$isServerRevisions" ]; then
     allargs+=($(svn-serverrevs))
 fi
 
-svn log --non-interactive "${allargs[@]}" | sed -ne '
+svn log "${allargs[@]}" | sed -ne '
 /^r[0-9]\+/{
     s/\(^r[0-9]\+\) *|[^|]\+| *\([^ |]\+\)[^|]*|.*/\1 \2 /
     N
@@ -47,4 +47,4 @@ svn log --non-interactive "${allargs[@]}" | sed -ne '
     s/\n//g
     p
 }
-' | $filter | colorize | less --quit-on-intr --RAW-CONTROL-CHARS
+' | $filter | colorize | less --RAW-CONTROL-CHARS
