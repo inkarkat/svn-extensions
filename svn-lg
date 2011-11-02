@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-One-line log messages with commit summary. 
+One-line log messages with author, date and commit summary. 
 --no-merge	Exclude any commits that mention merge in the revision summary. 
 --server	Instead of local history, only list server revisions that you
 		don't have yet. 
@@ -13,11 +13,11 @@ HELPTEXT
 }
 
 : ${COLOR_REVISION:='[36m'}
-: ${COLOR_DATE:='[34m'}
+: ${COLOR_AUTOR_DATE:='[32m'}
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    sed -e "s/^\\([^ ]\+\\) \\([^ ]\+\\) \\(.*\\)/${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_DATE}\\2${COLOR_RESET} \\3/"
+    sed -e 's/^\(r[0-9]\+\) \(([^)]\+)\) \(.*\)/'"${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_AUTOR_DATE}\\2${COLOR_RESET} \\3/"
 }
 
 typeset filter=cat
@@ -39,12 +39,16 @@ if [ "$isServerRevisions" ]; then
     allargs+=($(svn-serverrevs))
 fi
 
-svn log "${allargs[@]}" | sed -ne '
+readonly today=$(date +%F)
+svn log --non-interactive "${allargs[@]}" | sed -ne '
 /^r[0-9]\+/{
-    s/\(^r[0-9]\+\) *|[^|]\+| *\([^ |]\+\)[^|]*|.*/\1 \2 /
+'"/ | ${today} /  "'s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *[^ |]\+ \([^ |]\+\) [^|]*|.*/\1 (\2, \3) /
+    t done
+                    s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *\([^ |]\+\)[^|]*|.*/\1 (\2, \3) /
+:done
     N
     N
     s/\n//g
     p
 }
-' | $filter | colorize | less --RAW-CONTROL-CHARS
+' | $filter | colorize | less --quit-on-intr --RAW-CONTROL-CHARS
