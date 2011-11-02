@@ -5,7 +5,8 @@ printUsage()
     cat <<HELPTEXT
 Remove unversioned files and empty directories, 
 with -r also any unversioned directory trees. 
-Usage: "$(basename "$1")" [-r] [PATH...] [-?|-h|--help]
+With -x|--no-ignore also ignored files. 
+Usage: "$(basename "$1")" [-r] [-x|--no-ignore] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 case "$1" in
@@ -17,8 +18,13 @@ if [ "$1" = "-r" ]; then
     recursiveFlag='-r'
     shift
 fi
+additionalArgs=
+if [ "$1" = "-x" ]; then
+    additionalArgs="${additionalArgs}${additionalArgs:+ }--no-ignore"
+    shift
+fi
 
-svn status "$@" | grep '^\?' | cut -c 9- | while read victim
+svn status $additionalArgs "$@" | grep '^[?I]' | cut -c 9- | while read victim
 do
     if [ -d "$victim" -a -z "$recursiveFlag" ]; then
 	rmdir -- "$victim" && echo "$victim"
