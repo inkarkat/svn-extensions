@@ -222,4 +222,4 @@ svn log "${allargs[@]}" | sed -e '
 
 # Indent revision message. 
 s/^/    /
-' | $mergeFilter | $finalFilter | less --quit-on-intr --RAW-CONTROL-CHARS
+' | $mergeFilter | $finalFilter | less --RAW-CONTROL-CHARS
