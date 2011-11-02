@@ -1,18 +1,40 @@
-#!/bin/sh
+#!/bin/bash
+
+shopt -qs extglob 2>/dev/null
 
 printUsage()
 {
     cat <<HELPTEXT
 Show log message and textual diff for a particular commit. 
-Usage: "$(basename "$1")" REV [-?|-h|--help]
+Usage: "$(basename "$1")" [[-c|--change] REV [[-c|--change] REV ...]] [-?|-h|--help]
 HELPTEXT
 }
 
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
-[ $# -eq 0 ] && { echo >&2 "ERROR: Must specify REV."; printUsage "$0"; exit 1; }
-revision=$1
+
+typeset -a allargs=()
+typeset -a revisions=()
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--change|-c)	shift; revisions+=("$1"); shift;;
+	?(r)+([0-9]))	       revisions+=("${1#r}"); shift;;
+	*)
+	    allargs+=("$1")
+	    shift
+	    ;;
+    esac
+done
 shift
 
-(svn-wrapper log --incremental -c "$revision" "$@" && svn-wrapper diff -c "$revision" "$@") | less --RAW-CONTROL-CHARS
+if [ ${#revisions[@]} -eq 0 ]; then
+    echo >&2 "ERROR: Must specify REV."; printUsage "$0"; exit 1
+else
+    for revision in "${revisions[@]}"
+    do
+	svn-wrapper log --incremental -c "$revision" "${allargs[@]}" && svn-wrapper diff -c "$revision" "${allargs[@]}"
+    done | less --RAW-CONTROL-CHARS
+fi
