@@ -1,0 +1,24 @@
+#!/bin/sh
+
+printUsage()
+{
+    cat <<HELPTEXT
+Display a list of committers sorted by the frequency of commits. 
+Limit reporting to a revision range via -r N (recent until N), -r M:N,
+a number of commits via -l N, or since a date via --since DATE or explicitly
+via -r {startDate}:{endDate}. 
+Usage: "$(basename "$1")" [-r ARG1[:ARG2] | -l|--limit N | --since DATE] [TARGET[@REV]...] [-?|-h|--help]
+HELPTEXT
+}
+
+reportingRange=
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --since)		shift;
+			startDate=$(date -d "$1" +%F) || exit 2
+			shift
+			reportingRange="-r {${startDate}}:COMMITTED"
+			;;
+esac
+
+svn log -q $reportingRange "$@" | grep '|' | awk '{print $3}' | sort | uniq -c | sort -nr
