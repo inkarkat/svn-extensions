@@ -10,12 +10,13 @@ Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [PATH.
 HELPTEXT
 }
 
+: ${COLOR_HEADER:='[34m'}
 : ${COLOR_REVISION:='[36m'}
-: ${COLOR_DATE:='[34m'}
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    sed -e "s/^\\([^ ]\+\\) \\([^ ]\+\\) \\(.*\\)/${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_DATE}\\2${COLOR_RESET} \\3/"
+    sed -e '/^[^ ].*:$/'"s/.*/${COLOR_HEADER}\\0${COLOR_RESET}/" \
+	-e 's/\(^      \)\(r[0-9]\+\)\(:.*\)/'"\\1${COLOR_REVISION}\\2${COLOR_RESET}\\3/"
 }
 
 typeset filter=cat
@@ -32,38 +33,41 @@ do
     esac
 done
 
-# svn log "${allargs[@]}" | sed -ne '
-# /^r[0-9]\+/{
-#     s/\(^r[0-9]\+\) *| *\([^ |]\+\) *| *[^ |]\+[^|]*|.*/\2 | \1: /
-#     N
-#     N
-#     s/\n//g
-#     p
-# }
-# ' | $filter
-
-cat /tmp/svn | awk -F\| '
+svn log "${allargs[@]}" | sed -ne '
+/^r[0-9]\+/{
+    s/\(^r[0-9]\+\) *| *\([^ |]\+\) *| *[^ |]\+[^|]*|.*/\2 | \1 | /
+    N
+    N
+    s/\n//g
+    p
+}
+' | $filter | awk '
+BEGIN {
+    FS = " \\| "
+}
 {
     if (NF == 0)
 	next
-    cnt[$1]++
+
+    commitCount[$1]++
     if (highestRev[$1] == "")
 	highestRev[$1] = $2
-    commits[$1] = commits[$1] "\n      " $2 ": " $3
+    commits[$1] = commits[$1] "\n      " $2 ": " substr($0, index($0, $2) + 3 + length($2))
 }
 END {
-    for (i in cnt) {
-	rev[sprintf("%04d %s", cnt[i], highestRev[i])] = i
+    # The hash from author to commit count must be reverted, so that we can sort
+    # by index. Since that is not a one-to-one mapping, we add the highest
+    # revision number to the key to make it unique. This also makes the
+    # (reverse-sorted) output print the author with the highest revision number
+    # first when multiple authors have the same commit count. 
+    for (i in commitCount) {
+	flipped[sprintf("%04d %s", commitCount[i], highestRev[i])] = i
     }
 
-    for (i in rev) { 
-	print i
-    }
-
-    n = asorti(rev, dest)
+    n = asorti(flipped, dest)
     for (j = n; j > 0; j--) {
-	author = rev[dest[j]]
-	print author "(" cnt[author] "):" commits[author]
+	author = flipped[dest[j]]
+	print author " (" commitCount[author] "):" commits[author]
     }
 }
-' | less --RAW-CONTROL-CHARS
+' | colorize | less --quit-on-intr --RAW-CONTROL-CHARS
