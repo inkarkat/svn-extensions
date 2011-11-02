@@ -9,7 +9,9 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 		specified pattern. 
 --author regexp	Limit to commits by author. 
 #--no-merge	Exclude any commits that mention merge in the revision summary. 
-Usage: "$(basename "$1")" [-r|--revision ARG] [-l|--limit ARG] [PATH] [-?|-h|--help]
+--server	Instead of local history, only list server revisions that you
+		don't have yet. 
+Usage: "$(basename "$1")" [-r|--revision ARG] [-l|--limit ARG] [--server|PATH] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -40,6 +42,7 @@ isMergeFilter=
 authorArgs=
 grepArgs=
 revisionRangeArgs=
+serverRevisionsArgs=
 typeset -a allargs=()
 while [ $# -gt 0 ]
 do
@@ -51,14 +54,25 @@ do
 	#--no-merge)	shift; isMergeFilter=true;;
 	--grep)		shift; grepArgs=$1; shift;;
 	--author)	shift; authorArgs=$1; shift;;
+	--server)	shift
+			serverRevisionsArgs=$(svn-serverrevs)
+			# Only add the revision filter for getRevisions() here,
+			# the server repo URL must be passed to all svn
+			# commands. 
+			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
+			;;
 	*)
 	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
+if [ "$serverRevisionsArgs" ]; then
+    # Only append the server repo URL here; the revision selection is done by the loop. 
+    allargs+=("${serverRevisionsArgs##* }")
+fi
 
 getRevisions | while read revision
 do
     svn-wrapper log --incremental -c "$revision" "${allargs[@]}" && svn-wrapper diff -c "$revision" "${allargs[@]}"
-done | less --RAW-CONTROL-CHARS
+done | less --quit-on-intr --RAW-CONTROL-CHARS
