@@ -68,5 +68,5 @@ done
 if [ "$diffStatArgs" ]; then
     eval svn diff $svnDiffOptions '"${allargs[@]}"' | diffstat $diffStatArgs
 else
-    eval svn diff $svnDiffOptions '$colordiffCommand "${allargs[@]}"' | less --RAW-CONTROL-CHARS
+    eval svn diff $svnDiffOptions '$colordiffCommand "${allargs[@]}"' | less --quit-on-intr --RAW-CONTROL-CHARS
 fi
