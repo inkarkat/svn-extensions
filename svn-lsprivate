@@ -3,9 +3,10 @@
 printUsage()
 {
     cat <<HELPTEXT
-List unversioned files, show a summary for unversioned directories
+List unversioned files. Show a summary for unversioned directories
 or with -l the entire subdir contents. 
-Usage: "$(basename "$1")" [-l] [PATH...] [-?|-h|--help]
+With -x|--no-ignore also ignored files. 
+Usage: "$(basename "$1")" [-l] [-x|--no-ignore] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 case "$1" in
@@ -17,8 +18,13 @@ if [ "$1" = "-l" ]; then
     isLongFormat='true'
     shift
 fi
+additionalArgs=
+if [ "$1" = "-x" ]; then
+    additionalArgs="${additionalArgs}${additionalArgs:+ }--no-ignore"
+    shift
+fi
 
-svn status "$@" | grep '^\?' | cut -c 9- | while read filespec
+svn status $additionalArgs "$@" | grep '^[?I]' | cut -c 9- | while read filespec
 do
     if [ -d "$filespec" ]; then
 	if [ "$isLongFormat" ]; then
