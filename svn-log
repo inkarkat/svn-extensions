@@ -83,6 +83,35 @@ showNoMatch()
     # digits in the revision decreases. 
     [ "$1" ] && printf >&2 '%s\r' "${1} "
 }
+processRevision()
+{
+    local -r FILE=${1:?}
+    isSkip=
+
+    if [ "$authorArgs" ]; then
+	extractHeaderItem 'Author' "$FILE" | grep -q "$authorArgs" || isSkip='true'
+    fi
+    if [ "$grepArgs" ]; then
+	# Filter away the revision header and changed file list, and
+	# try to match the regexp in the remaining revision message. 
+	extractRevisionMessage "$FILE" | grep -q "$grepArgs" || isSkip='true'
+    fi
+
+    if [ "$isSkip" ]; then
+	showNoMatch "$revision"
+    else 
+	if [ "$grepArgs" -a "$grepOptions" ]; then
+	    # Let (another pass of) grep highlight the matches. 
+	    # We include all lines (but without highlighting) with
+	    # the regexp /$/. 
+	    grep $grepOptions -e "$grepArgs" -e '$' "$FILE"
+	else
+	    cat "$FILE"
+	fi | colorize
+	# Must do fine-grained colorization here so that the results
+	# appear immediately, to avoid buffering in the pipe. 
+    fi
+}
 grepFilter()
 {
     TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
@@ -94,31 +123,7 @@ grepFilter()
 	case "$line" in
 	    revision\ r+([0-9]))
 		if [ -r "$TMPFILE" ]; then
-		    isSkip=
-
-		    if [ "$authorArgs" ]; then
-			extractHeaderItem 'Author' "$TMPFILE" | grep -q "$authorArgs" || isSkip='true'
-		    fi
-		    if [ "$grepArgs" ]; then
-			# Filter away the revision header and changed file list, and
-			# try to match the regexp in the remaining revision message. 
-			extractRevisionMessage "$TMPFILE" | grep -q "$grepArgs" || isSkip='true'
-		    fi
-
-		    if [ "$isSkip" ]; then
-			showNoMatch "$revision"
-		    else 
-			if [ "$grepArgs" -a "$grepOptions" ]; then
-			    # Let (another pass of) grep highlight the matches. 
-			    # We include all lines (but without highlighting) with
-			    # the regexp /$/. 
-			    grep $grepOptions -e "$grepArgs" -e '$' "$TMPFILE"
-			else
-			    cat "$TMPFILE"
-			fi | colorize
-			# Must do fine-grained colorization here so that the results
-			# appear immediately, to avoid buffering in the pipe. 
-		    fi
+		    processRevision "$TMPFILE"
 		fi
 
 		revision=$line
@@ -130,6 +135,11 @@ grepFilter()
 		;;
 	esac
     done
+    
+    # Process the very last revision, too. 
+    if [ -r "$TMPFILE" ]; then
+	processRevision "$TMPFILE"
+    fi
 
     rm "$TMPFILE" 2>/dev/null
 }
@@ -180,7 +190,7 @@ do
     esac
 done
 if [ "$isServerRevisions" ]; then
-    allargs+=($(svn-serverrevs --getargs))
+    allargs+=($(svn-serverrevs))
 fi
 
 svn log "${allargs[@]}" | sed -e '
@@ -212,4 +222,4 @@ svn log "${allargs[@]}" | sed -e '
 
 # Indent revision message. 
 s/^/    /
-' | $mergeFilter | $finalFilter | less --RAW-CONTROL-CHARS
+' | $mergeFilter | $finalFilter | less --quit-on-intr --RAW-CONTROL-CHARS
