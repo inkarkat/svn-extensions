@@ -5,10 +5,12 @@ printUsage()
     cat <<HELPTEXT
 One-line log messages with author, date and commit summary. 
 --no-merge	Exclude any commits that mention merge in the revision summary. 
+--author regexp	Limit to commits by author. 
+--no-list-author Omit the author name from the log. 
 --server	Instead of local history, only list server revisions that you
 		don't have yet. 
 Note: svn log option -v is not supported here, but also doesn't make sense here. 
-Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [--author regexp] [--no-list-author] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -21,6 +23,8 @@ colorize()
 }
 
 typeset filter=cat
+typeset isListAuthor=true
+typeset authorArgs=
 typeset isServerRevisions=
 typeset -a allargs=()
 while [ $# -gt 0 ]
@@ -28,6 +32,8 @@ do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--no-merge)	shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
+	--no-list-author)	shift; isListAuthor=;;
+	--author)	shift; authorArgs=$1; shift;;
 	--server)	shift; isServerRevisions='true';;
 	*)
 	    allargs+=("$1")
@@ -40,11 +46,11 @@ if [ "$isServerRevisions" ]; then
 fi
 
 readonly today=$(date +%F)
-svn log --non-interactive "${allargs[@]}" | sed -ne '
+svn log --non-interactive "${allargs[@]}" | sed -n -e "${authorArgs:+/^r[0-9]\+ | [^|]*${authorArgs}[^|]* |/!d}" -e '
 /^r[0-9]\+/{
-'"/ | ${today} /  "'s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *[^ |]\+ \([^ |]\+\) [^|]*|.*/\1 (\2, \3) /
+'"/ | ${today} /  "'s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *[^ |]\+ \([^ |]\+\) [^|]*|.*/\1 ('"${isListAuthor:+\2, }"'\3) /
     t done
-                    s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *\([^ |]\+\)[^|]*|.*/\1 (\2, \3) /
+                    s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *\([^ |]\+\)[^|]*|.*/\1 ('"${isListAuthor:+\2, }"'\3) /
 :done
     N
     N
