@@ -70,4 +70,4 @@ END {
 	print author " (" commitCount[author] "):" commits[author]
     }
 }
-' | colorize | less --quit-on-intr --RAW-CONTROL-CHARS
+' | colorize | less --RAW-CONTROL-CHARS
