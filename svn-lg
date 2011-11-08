@@ -1,12 +1,15 @@
 #!/bin/bash
 
+shopt -qs extglob 2>/dev/null
+
 printUsage()
 {
     cat <<HELPTEXT
 One-line log messages with author, date and commit summary. 
 --no-merge	Exclude any commits that mention merge in the revision summary. 
 --author regexp	Limit to commits by author. 
---no-list-author Omit the author name from the log. 
+--no-list-author Omit the author name from the log; happens automatically if
+		regexp is literal text. 
 --server	Instead of local history, only list server revisions that you
 		don't have yet. 
 Note: svn log option -v is not supported here, but also doesn't make sense here. 
@@ -33,7 +36,13 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--no-merge)	shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
 	--no-list-author)	shift; isListAuthor=;;
-	--author)	shift; authorArgs=$1; shift;;
+	--author)	shift;
+			authorArgs=$1;
+			shift;
+			# DWIM: When the author is no regexp, omit the known
+			# name from the log. 
+			[[ "$authorArgs" == +([- _a-zA-Z]) ]] && isListAuthor=
+			;;
 	--server)	shift; isServerRevisions='true';;
 	*)
 	    allargs+=("$1")
@@ -50,7 +59,7 @@ svn log --non-interactive "${allargs[@]}" | sed -n -e "${authorArgs:+/^r[0-9]\+ 
 /^r[0-9]\+/{
 '"/ | ${today} /  "'s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *[^ |]\+ \([^ |]\+\) [^|]*|.*/\1 ('"${isListAuthor:+\2, }"'\3) /
     t done
-                    s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *\([^ |]\+\)[^|]*|.*/\1 ('"${isListAuthor:+\2, }"'\3) /
+		    s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *\([^ |]\+\)[^|]*|.*/\1 ('"${isListAuthor:+\2, }"'\3) /
 :done
     N
     N
