@@ -1,0 +1,49 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Minimal one-line log messages with commit summary. 
+--no-merge	Exclude any commits that mention merge in the revision summary. 
+--server	Instead of local history, only list server revisions that you
+		don't have yet. 
+Note: svn log option -v is not supported here, but also doesn't make sense here. 
+Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
+HELPTEXT
+}
+
+: ${COLOR_REVISION:='[36m'}
+: ${COLOR_RESET:='[0m'}
+colorize()
+{
+    sed -e "s/^\\([^ ]\+\\) \\(.*\\)/${COLOR_REVISION}\\1${COLOR_RESET} \\2/"
+}
+
+typeset filter=cat
+typeset isServerRevisions=
+typeset -a allargs=()
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--no-merge)	shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
+	--server)	shift; isServerRevisions='true';;
+	*)
+	    allargs+=("$1")
+	    shift
+	    ;;
+    esac
+done
+if [ "$isServerRevisions" ]; then
+    allargs+=($(svn-serverrevs))
+fi
+
+svn log --non-interactive "${allargs[@]}" | sed -ne '
+/^r[0-9]\+/{
+    s/\(^r[0-9]\+\) *.*/\1 /
+    N
+    N
+    s/\n//g
+    p
+}
+' | $filter | colorize | less --quit-on-intr --RAW-CONTROL-CHARS
