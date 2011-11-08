@@ -33,7 +33,7 @@ do
     esac
 done
 
-svn log "${allargs[@]}" | sed -ne '
+svn log --non-interactive "${allargs[@]}" | sed -ne '
 /^r[0-9]\+/{
     s/\(^r[0-9]\+\) *| *\([^ |]\+\) *| *[^ |]\+[^|]*|.*/\2 | \1 | /
     N
@@ -70,4 +70,4 @@ END {
 	print author " (" commitCount[author] "):" commits[author]
     }
 }
-' | colorize | less --RAW-CONTROL-CHARS
+' | colorize | less --quit-on-intr --RAW-CONTROL-CHARS
