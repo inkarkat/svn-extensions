@@ -1,0 +1,16 @@
+#!/bin/sh
+
+printUsage()
+{
+    cat <<HELPTEXT
+Include the entire, recursive PATH or everything in the current directory in
+future updates of the working copy. 
+Usage: "$(basename "$1")" [PATH...] [-?|-h|--help]
+HELPTEXT
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+svn update --set-depth=infinity "$@"
