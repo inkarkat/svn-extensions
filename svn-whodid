@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-Show log sorted by name and their commits. 
+Show log grouped by name and sorted by the number of their commits. 
 --no-merge	Exclude any commits that mention merge in the revision summary. 
 Note: svn log option -v is not supported here, but also doesn't make sense here. 
 Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
