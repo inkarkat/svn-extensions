@@ -22,7 +22,7 @@ HELPTEXT
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    sed -e 's/^\(r[0-9]\+\) \(([^)]\+)\) \(.*\)/'"${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_AUTOR_DATE}\\2${COLOR_RESET} \\3/"
+    sed --unbuffered -e 's/^\(r[0-9]\+\) \(([^)]\+)\) \(.*\)/'"${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_AUTOR_DATE}\\2${COLOR_RESET} \\3/"
 }
 
 typeset filter=cat
@@ -34,7 +34,7 @@ while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--no-merge)	shift; filter='grep -iv merg\(e\|ed\|es\|ing\)\b';;
+	--no-merge)	shift; filter='grep --line-buffered -iv merg\(e\|ed\|es\|ing\)\b';;
 	--no-list-author)	shift; isListAuthor=;;
 	--author)	shift;
 			authorArgs=$1;
@@ -55,7 +55,7 @@ if [ "$isServerRevisions" ]; then
 fi
 
 readonly today=$(date +%F)
-svn log --non-interactive "${allargs[@]}" | sed -n -e "${authorArgs:+/^r[0-9]\+ | [^|]*${authorArgs}[^|]* |/!d}" -e '
+svn log --non-interactive "${allargs[@]}" | sed --unbuffered -n -e "${authorArgs:+/^r[0-9]\+ | [^|]*${authorArgs}[^|]* |/!d}" -e '
 /^r[0-9]\+/{
 '"/ | ${today} /  "'s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *[^ |]\+ \([^ |]\+\) [^|]*|.*/\1 ('"${isListAuthor:+\2, }"'\3) /
     t done
