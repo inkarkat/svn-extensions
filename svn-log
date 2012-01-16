@@ -19,7 +19,7 @@ HELPTEXT
 
 mergeFilter()
 {
-    sed -e '
+    sed --unbuffered -e '
 # Silently capture all header lines until the revision summary in hold space. 
 /^revision r[0-9]\+$/ {
     h	# This starts the header. 
@@ -151,7 +151,7 @@ grepFilter()
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    sed -e "
+    sed --unbuffered --unbuffered -e "
 s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
 /^Changed paths:/,/^\$/ {
     s/^ \\+A .*\$/${COLOR_FILEADDED}\\0${COLOR_RESET}/
@@ -193,7 +193,7 @@ if [ "$isServerRevisions" ]; then
     allargs+=($(svn-serverrevs))
 fi
 
-svn log --non-interactive "${allargs[@]}" | sed -e '
+svn log --non-interactive "${allargs[@]}" | sed --unbuffered -e '
 /^r[0-9]\+/{
     # Expand revision info into multi-line header. 
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
