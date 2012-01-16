@@ -32,9 +32,9 @@ getRevisions()
     #fi
 
     if [ "$xmlFilter" ]; then
-	(eval "svn log --xml $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
+	(eval "svn log --non-interactive --xml $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
     else
-	(eval "svn log --xml --with-no-revprops $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n
+	(eval "svn log --non-interactive --xml --with-no-revprops $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n
     fi
 }
 
@@ -75,4 +75,4 @@ fi
 getRevisions | while read revision
 do
     svn-wrapper log --incremental -c "$revision" "${allargs[@]}" && svn-wrapper diff -c "$revision" "${allargs[@]}"
-done | less --RAW-CONTROL-CHARS
+done | less --quit-on-intr --RAW-CONTROL-CHARS
