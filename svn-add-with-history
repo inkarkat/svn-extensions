@@ -5,6 +5,7 @@ printUsage()
     cat <<HELPTEXT
 Put files under version control by copying the history of an existing element. 
 Usage: "$(basename "$1")" [-?|-h|--help] SRC[@REV] PATH...
+Example: "$(basename "$1")" path/to/{Original,Cloned}File.txt
 HELPTEXT
 }
 case "$1" in
