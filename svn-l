@@ -46,4 +46,4 @@ svn log --non-interactive "${allargs[@]}" | sed --unbuffered -ne '
     s/\n//g
     p
 }
-' | $filter | colorize | less --quit-on-intr --RAW-CONTROL-CHARS
+' | $filter | colorize | less --RAW-CONTROL-CHARS
