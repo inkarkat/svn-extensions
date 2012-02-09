@@ -28,11 +28,11 @@ cleanup()
 trap 'cleanup' EXIT
 
 
-svn info "$@" | sed -e 's/^/Your   /' > "$TMPFILE" || exit 1 
+svn info --non-interactive "$@" | sed -e 's/^/Your   /' > "$TMPFILE" || exit 1 
 lastLocalRevision=$(sed -n -e 's/^Your * Last Changed Rev: \(.*\)$/\1/p' "$TMPFILE")
 repositoryUrl=$(sed -n -e 's/^Your * URL: \(.*\)$/\1/p' "$TMPFILE")
 
-svn info "$@" "$repositoryUrl" | sed -e 's/^/Server /' >> "$TMPFILE" || exit 1
+svn info --non-interactive "$@" "$repositoryUrl" | sed -e 's/^/Server /' >> "$TMPFILE" || exit 1
 lastRepoRevision=$(sed -n -e 's/^Server Last Changed Rev: \(.*\)$/\1/p' "$TMPFILE")
 
 for key in 'Server URL: ' 'Revision: ' 'Changed Author: ' 'Changed Rev: ' 'Changed Date: '
