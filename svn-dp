@@ -41,5 +41,5 @@ else
 	[ "$isFirstEntry" ] && isFirstEntry= || echo
 	echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
 	svn-wrapper diff --change $revision "${allargs[@]}"
-    done | less --RAW-CONTROL-CHARS
+    done | less --quit-on-intr --RAW-CONTROL-CHARS
 fi
