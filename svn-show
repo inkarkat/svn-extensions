@@ -36,5 +36,5 @@ else
     for revision in "${revisions[@]}"
     do
 	svn-wrapper log --incremental -c "$revision" "${allargs[@]}" && svn-wrapper diff -c "$revision" "${allargs[@]}"
-    done | less --RAW-CONTROL-CHARS
+    done | less --quit-on-intr --RAW-CONTROL-CHARS
 fi
