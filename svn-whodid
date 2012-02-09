@@ -5,10 +5,9 @@ printUsage()
     cat <<HELPTEXT
 Show log grouped by name and sorted by the number of their commits. 
 --no-merge	Exclude any commits that mention merge in the revision summary. 
---no-color	Turn off color highlighting. 
 -s|--summary	Show author names sorted by the number of their commits only. 
 Note: svn log option -v is not supported here, but also doesn't make sense here. 
-Usage: "$(basename "$1")" [--no-merge] [-s|--summary] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-s|--summary] [-c M | -r N[:M]] [-l|--limit ARG] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -17,25 +16,19 @@ HELPTEXT
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    if [ "$isNoColor" ]; then
-	cat
-    else
-	sed --unbuffered \
-	    -e '/^[^ ].*:$/'"s/.*/${COLOR_HEADER}\\0${COLOR_RESET}/" \
-	    -e 's/\(^      \)\(r[0-9]\+\)\(:.*\)/'"\\1${COLOR_REVISION}\\2${COLOR_RESET}\\3/"
-    fi
+    sed --unbuffered \
+	-e '/^[^ ].*:$/'"s/.*/${COLOR_HEADER}\\0${COLOR_RESET}/" \
+	-e 's/\(^      \)\(r[0-9]\+\)\(:.*\)/'"\\1${COLOR_REVISION}\\2${COLOR_RESET}\\3/"
 }
 
 typeset filter=cat
 typeset isSummary=
-typeset isNoColor=
 typeset -a allargs=()
 while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--no-merge)	shift; filter='grep --line-buffered -iv merg\(e\|ed\|es\|ing\)\b';;
-	--no-color)	shift; isNoColor='true';;
 	--summary|-s)	shift; isSummary='true';;
 	*)
 	    allargs+=("$1")
