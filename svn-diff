@@ -66,7 +66,7 @@ done
 # doesn't work any more. 
 [ "$diffOptions" ] && svnDiffOptions="-x \"-u ${diffOptions}\""
 if [ "$diffStatArgs" ]; then
-    eval svn diff $svnDiffOptions '"${allargs[@]}"' | diffstat $diffStatArgs
+    eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | diffstat $diffStatArgs
 else
-    eval svn diff $svnDiffOptions '$colordiffCommand "${allargs[@]}"' | less --quit-on-intr --RAW-CONTROL-CHARS
+    eval svn diff --non-interactive $svnDiffOptions '$colordiffCommand "${allargs[@]}"' | less --quit-on-intr --RAW-CONTROL-CHARS
 fi
