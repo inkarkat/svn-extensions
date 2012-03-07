@@ -6,13 +6,14 @@ printUsage()
 Highlights diff output red/green. 
 With -b (ignore space change) and -w (ignore all white space) options. 
 Can also show statistics with --stat, --numstat and --shortstat. 
+--no-color	Turn off colored diff. 
 
 Default is working copy to last commit; use
 -r PREV to diff working copy with previous commit and
 -r PREV:COMMITTED (or svn dp) to show change in previous commit, and
 -r REV:COMMITTED to show changes across revisions. 
 
-Usage: "$(basename "#1")" [-b] [-w] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [TARGET[@REV]...] [-?|-h|--help]
+Usage: "$(basename "#1")" [-b] [-w] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -52,6 +53,10 @@ do
 	--shortstat)
 	    shift
 	    diffStatArgs='-C -s'
+	    ;;
+	--no-color)
+	    shift
+	    colordiffCommand=
 	    ;;
 	*)
 	    allargs+=("$1")
