@@ -21,4 +21,4 @@ case "$1" in
 			;;
 esac
 
-svn log -q $reportingRange "$@" | grep '|' | awk '{print $3}' | sort | uniq -c | sort -nr
+svn log --non-interactive -q $reportingRange "$@" | grep '|' | awk '{print $3}' | sort | uniq -c | sort -nr
