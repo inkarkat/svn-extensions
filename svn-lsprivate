@@ -24,7 +24,7 @@ if [ "$1" = "-x" ]; then
     shift
 fi
 
-svn status $additionalArgs "$@" | grep '^[?I]' | cut -c 9- | while read filespec
+svn status --non-interactive $additionalArgs "$@" | grep '^[?I]' | cut -c 9- | while read filespec
 do
     if [ -d "$filespec" ]; then
 	if [ "$isLongFormat" ]; then
