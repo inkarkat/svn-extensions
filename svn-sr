@@ -6,18 +6,25 @@ printUsage()
     cat <<HELPTEXT
 Show server revisions, i.e. whether there are new revisions on the server and
 you should update your working copy. 
-Usage: "$(basename "$1")" [TARGET[@REV]...] [-?|-h|--help]
+--no-color	Turn off color highlighting. 
+Usage: "$(basename "$1")" [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
+typeset isNoColor=
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --no-color)		shift; isNoColor='true';;
 esac 
 
 : ${COLOR_YOUR:='[36m'}
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    sed -e "s/^Your .*$/${COLOR_YOUR}\\0${COLOR_RESET}/"
+    if [ "$isNoColor" ]; then
+	cat
+    else
+	sed -e "s/^Your .*$/${COLOR_YOUR}\\0${COLOR_RESET}/"
+    fi
 }
 
 TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
