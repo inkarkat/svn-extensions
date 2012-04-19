@@ -5,8 +5,8 @@ shopt -qs extglob 2>/dev/null
 printUsage()
 {
     cat <<HELPTEXT
-Show log message and textual diff for a particular commit. 
-Usage: "$(basename "$1")" [[-c|--change] REV [[-c|--change] REV ...]] [-?|-h|--help]
+Show log message and textual diff for a particular commit.
+Usage: "$(basename "$1")" [[-c|--change] REV [[-c|--change] REV ...]] [--no-color] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -35,6 +35,6 @@ if [ ${#revisions[@]} -eq 0 ]; then
 else
     for revision in "${revisions[@]}"
     do
-	svn-wrapper log --incremental -c "$revision" "${allargs[@]}" && svn-wrapper diff -c "$revision" "${allargs[@]}"
+	svn-wrapper log --incremental --change "$revision" "${allargs[@]}" && svn-dp --change "$revision" "${allargs[@]}"
     done | less --quit-on-intr --RAW-CONTROL-CHARS
 fi
