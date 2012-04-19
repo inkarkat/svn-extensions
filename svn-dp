@@ -6,10 +6,11 @@ printUsage()
 {
     cat <<HELPTEXT
 Diff with predecessor, either current COMMITTED revision to PREV, or
-revision REV to its predecessor. 
+revision REV to its predecessor.
+--no-color	Turn off color highlighting.
 Note: The [@REV] is only a revision peg for use on the server; you cannot
-specify a local revision with it. 
-Usage: "$(basename "$1")" [[-c|--change] REV [[-c|--change] REV ...]] [TARGET[@REV]...] [-?|-h|--help]
+specify a local revision with it.
+Usage: "$(basename "$1")" [[-c|--change] REV [[-c|--change] REV ...]] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -21,6 +22,14 @@ while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--no-color)
+			allargs+=("$1")	# Pass option along to my svn diff wrapper.
+			shift
+			# And clear all colors used here.
+			for color in ${!COLOR_@}; do
+			    unset $color
+			done
+			;;
 	--change|-c)	shift; revisions+=("$1"); shift;;
 	?(r)+([0-9]))	       revisions+=("${1#r}"); shift;;
 	*)
@@ -30,16 +39,38 @@ do
     esac
 done
 
+diffHandlingMoves()
+{
+    revision=$1; shift
+
+    svn-wrapper diff --change $revision "$@" && return 0
+
+    # svn diff returned an error; it may have been unable to find the repository
+    # location for the predecessor, in case it was moved. I don't know how to
+    # detect the move other than parsing the verbose log output, so try this
+    # here.
+    repositoryUrl=$(svn info --non-interactive "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p') || return $?
+    repositoryRoot=$(svn info --non-interactive "$@" | sed -n -e 's/^Repository Root: \(.*\)$/\1/p') || return $?
+    path=${repositoryUrl#"${repositoryRoot}"}
+    previousPathAndRev=$(svn log -v --change $revision "$@" | sed -ne "s#^   A ${path//#/\\#} (from \\(.*:[0-9]\+\\))\$#\\1#p")
+    [ "$previousPathAndRev" ] || return 1
+    previousPath=${previousPathAndRev%:*}
+    previousRev=${previousPathAndRev##*:}
+
+    echo >&2 "svn-dp: Following file move from ${previousPath} in revision ${previousRev}"
+    svn-wrapper diff --revision ${previousRev}:${revision} --old="^${previousPath}" --new="$@"
+}
+
 if [ ${#revisions[@]} -eq 0 ]; then
     svn-wrapper diff -r PREV:COMMITTED "${allargs[@]}"
 elif [ ${#revisions[@]} -eq 1 ]; then
-    svn-wrapper diff --change $revisions "${allargs[@]}"
+    diffHandlingMoves $revisions "${allargs[@]}"
 else
     typeset isFirstEntry='true'
     for revision in "${revisions[@]}"
     do
 	[ "$isFirstEntry" ] && isFirstEntry= || echo
 	echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
-	svn-wrapper diff --change $revision "${allargs[@]}"
+	diffHandlingMoves $revision "${allargs[@]}"
     done | less --quit-on-intr --RAW-CONTROL-CHARS
 fi
