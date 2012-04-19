@@ -11,9 +11,10 @@ Verbose log messages.
 		specified pattern. 
 --author regexp	Limit to commits by author. 
 --no-merge	Exclude any commits that mention merge in the revision summary. 
+--no-color	Turn off color highlighting. 
 --server	Instead of local history, only list server revisions that you
 		don't have yet. 
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [--author regexp] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [--author regexp] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -151,7 +152,10 @@ grepFilter()
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    sed --unbuffered --unbuffered -e "
+    if [ "$isNoColor" ]; then
+	cat
+    else
+	sed --unbuffered --unbuffered -e "
 s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
 /^Changed paths:/,/^\$/ {
     s/^ \\+A .*\$/${COLOR_FILEADDED}\\0${COLOR_RESET}/
@@ -159,20 +163,22 @@ s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
     s/^ \\+R .*\$/${COLOR_FILEREMOVED}\\0${COLOR_RESET}/
 }
 "
+    fi
 }
 
-mergeFilter=cat
-finalFilter=colorize
-grepArgs=
-grepOptions=
+typeset mergeFilter=cat
+typeset finalFilter=colorize
+typeset grepArgs=
+typeset grepOptions=
 case "$GREP_OPTIONS" in
     # The user prefers highlighting of grep matches; enable this in here, too,
     # even though our grep is in a pipe. 
     *--color=auto*) grepOptions='--color=always';;
     *--color=always*) grepOptions='--color=always';;
 esac
-authorArgs=
-isServerRevisions=
+typeset authorArgs=
+typeset isNoColor=
+typeset isServerRevisions=
 
 typeset -a allargs=()
 while [ $# -gt 0 ]
@@ -180,6 +186,7 @@ do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--no-merge)	shift; mergeFilter='mergeFilter';;
+	--no-color)	shift; isNoColor='true';;
 	--grep)		shift; finalFilter='grepFilter'; grepArgs=$1; shift;;
 	--author)	shift; finalFilter='grepFilter'; authorArgs=$1; shift;;
 	--server)	shift; isServerRevisions='true';;
