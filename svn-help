@@ -1,0 +1,10 @@
+#!/bin/sh
+
+printUsage()
+{
+    cat <<HELPTEXT
+Use the pager for help output.
+HELPTEXT
+}
+
+exec svn help "$@" | "${PAGER:-less}"
