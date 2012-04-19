@@ -9,7 +9,7 @@ Usage: "$(basename "$1")"
 HELPTEXT
 }
 
-repositoryUrl=$(svn info "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $? 
-wcRevision=$(svn info "$@" | sed -n -e 's/^Revision: \(.*\)$/\1/p') || exit $? 
+repositoryUrl=$(svn info --non-interactive "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $? 
+wcRevision=$(svn info --non-interactive "$@" | sed -n -e 's/^Revision: \(.*\)$/\1/p') || exit $? 
 
 echo "-r HEAD:$((wcRevision + 1)) $repositoryUrl"
