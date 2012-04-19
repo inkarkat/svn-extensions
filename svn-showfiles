@@ -1,0 +1,39 @@
+#!/bin/bash
+
+shopt -qs extglob 2>/dev/null
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show the files modified in passed revision or revision range. 
+--server	Instead of local history, only consider server revisions that
+		you don't have yet. 
+Usage: "$(basename "$1")" [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
+HELPTEXT
+}
+
+isServerRevisions=
+
+typeset -a allargs=()
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--server)	shift; isServerRevisions='true';;
+	*)
+	    allargs+=("$1")
+	    shift
+	    ;;
+    esac
+done
+if [ "$isServerRevisions" ]; then
+    allargs+=($(svn-serverrevs))
+fi
+
+svn log --non-interactive --verbose "${allargs[@]}" | sed -ne '
+/^Changed paths:/,/^$/ {
+    /^$/d
+    /^Changed paths:/d
+    p
+}
+' | sort -u | less --quit-on-intr --RAW-CONTROL-CHARS
