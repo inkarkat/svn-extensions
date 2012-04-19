@@ -10,31 +10,39 @@ One-line log messages with author, date and commit summary.
 --author regexp	Limit to commits by author. 
 --no-list-author Omit the author name from the log; happens automatically if
 		regexp is literal text. 
+--no-color	Turn off color highlighting. 
 --server	Instead of local history, only list server revisions that you
 		don't have yet. 
 Note: svn log option -v is not supported here, but also doesn't make sense here. 
-Usage: "$(basename "$1")" [--no-merge] [--author regexp] [--no-list-author] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [--author regexp] [--no-list-author] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
+: ${SVN_MERGE_COMMENT_PATTERN:=merg\\(e\\|ed\\|es\\|ing\\|eback\\)\\b}
 : ${COLOR_REVISION:='[36m'}
 : ${COLOR_AUTOR_DATE:='[32m'}
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    sed --unbuffered -e 's/^\(r[0-9]\+\) \(([^)]\+)\) \(.*\)/'"${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_AUTOR_DATE}\\2${COLOR_RESET} \\3/"
+    if [ "$isNoColor" ]; then
+	cat
+    else
+	sed --unbuffered -e 's/^\(r[0-9]\+\) \(([^)]\+)\) \(.*\)/'"${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_AUTOR_DATE}\\2${COLOR_RESET} \\3/"
+    fi
 }
 
 typeset filter=cat
 typeset isListAuthor=true
 typeset authorArgs=
 typeset isServerRevisions=
+typeset isNoColor=
 typeset -a allargs=()
 while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--no-merge)	shift; filter='grep --line-buffered -iv merg\(e\|ed\|es\|ing\)\b';;
+	--no-merge)	shift; filter="grep --line-buffered -iv ${SVN_MERGE_COMMENT_PATTERN}";;
+	--no-color)	shift; isNoColor='true';;
 	--no-list-author)	shift; isListAuthor=;;
 	--author)	shift;
 			authorArgs=$1;
