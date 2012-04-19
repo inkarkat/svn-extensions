@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-List revision number and author of the last commit.
+List revision number, author, and date of the last commit.
 Usage: "$(basename "$1")" [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
@@ -11,5 +11,7 @@ case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 
-# Omit the file size and date; a plain 'll' tells this, too.
-svn ls -v "$@" | cut -c 1-20,44-
+# Omit the file size; a plain 'll' tells this, too.
+# The commit date is different from the file's date in the working copy and may
+# be important, to leave that in.
+svn ls -v "$@" | cut -c 1-20,31-
