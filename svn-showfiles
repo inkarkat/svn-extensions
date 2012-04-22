@@ -5,9 +5,9 @@ shopt -qs extglob 2>/dev/null
 printUsage()
 {
     cat <<HELPTEXT
-Show the files modified in passed revision or revision range. 
+Show the files modified in passed revision or revision range.
 --server	Instead of local history, only consider server revisions that
-		you don't have yet. 
+		you don't have yet.
 Usage: "$(basename "$1")" [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
@@ -30,10 +30,11 @@ if [ "$isServerRevisions" ]; then
     allargs+=($(svn-serverrevs))
 fi
 
+set -o pipefail
 svn log --non-interactive --verbose "${allargs[@]}" | sed -ne '
 /^Changed paths:/,/^$/ {
     /^$/d
     /^Changed paths:/d
     p
 }
-' | sort -u | less --quit-on-intr --RAW-CONTROL-CHARS
+' | sort -k 2 -u | less --quit-on-intr --RAW-CONTROL-CHARS
