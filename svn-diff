@@ -3,15 +3,15 @@
 printUsage()
 {
     cat <<HELPTEXT
-Highlights diff output red/green. 
-With -b (ignore space change) and -w (ignore all white space) options. 
-Can also show statistics with --stat, --numstat and --shortstat. 
---no-color	Turn off colored diff. 
+Highlights diff output red/green.
+With -b (ignore space change) and -w (ignore all white space) options.
+Can also show statistics with --stat, --numstat and --shortstat.
+--no-color	Turn off colored diff.
 
 Default is working copy to last commit; use
 -r PREV to diff working copy with previous commit and
 -r PREV:COMMITTED (or svn dp) to show change in previous commit, and
--r REV:COMMITTED to show changes across revisions. 
+-r REV:COMMITTED to show changes across revisions.
 
 Usage: "$(basename "#1")" [-b] [-w] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
@@ -20,14 +20,14 @@ HELPTEXT
 diffOptions=
 diffStatArgs=
 
-# Highlight diff output if available. 
+# Highlight diff output if available.
 colordiffCommand=
 if which colordiff >/dev/null 2>&1; then
     colordiffCommand='--diff-cmd colordiff'
 fi
 
 typeset -a allargs=()
-# Simplify setting common diff options (that do not overlap with svn options). 
+# Simplify setting common diff options (that do not overlap with svn options).
 while [ $# -gt 0 ]
 do
     case "$1" in
@@ -41,7 +41,7 @@ do
 	    diffOptions="${diffOptions}${diffOptions:+ }-w"
 	    ;;
 	# Note: --ignore-eol-style seems to be handled internally by svn; it is
-	# not supported by GNU diff or colordiff. 
+	# not supported by GNU diff or colordiff.
 	--stat)
 	    shift
 	    diffStatArgs='-C'
@@ -66,9 +66,10 @@ do
 done
 
 # Note: diffOptions can be passed as a single argument "-x -u -b" as well as the
-# two-arg -x "-u -b", but not as individual arguments. 
+# two-arg -x "-u -b", but not as individual arguments.
 # Note: Must not pass an empty "" argument to svn, or the filtering for TARGET
-# doesn't work any more. 
+# doesn't work any more.
+set -o pipefail
 [ "$diffOptions" ] && svnDiffOptions="-x \"-u ${diffOptions}\""
 if [ "$diffStatArgs" ]; then
     eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | diffstat $diffStatArgs
