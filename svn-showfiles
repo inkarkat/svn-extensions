@@ -37,4 +37,4 @@ svn log --non-interactive --verbose "${allargs[@]}" | sed -ne '
     /^Changed paths:/d
     p
 }
-' | sort -k 2 -u | less --quit-on-intr --RAW-CONTROL-CHARS
+' | sort -u | less --quit-on-intr --RAW-CONTROL-CHARS
