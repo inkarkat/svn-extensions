@@ -7,4 +7,5 @@ Use the pager for help output.
 HELPTEXT
 }
 
+set -o pipefail
 exec svn help "$@" | "${PAGER:-less}"
