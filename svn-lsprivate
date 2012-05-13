@@ -4,8 +4,8 @@ printUsage()
 {
     cat <<HELPTEXT
 List unversioned files. Show a summary for unversioned directories
-or with -l the entire subdir contents. 
-With -x|--no-ignore also ignored files. 
+or with -l the entire subdir contents.
+With -x|--no-ignore also ignored files.
 Usage: "$(basename "$1")" [-l] [-x|--no-ignore] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
@@ -24,6 +24,7 @@ if [ "$1" = "-x" ]; then
     shift
 fi
 
+set -o pipefail
 svn status --non-interactive $additionalArgs "$@" | grep '^[?I]' | cut -c 9- | while read filespec
 do
     if [ -d "$filespec" ]; then
