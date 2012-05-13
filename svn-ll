@@ -14,4 +14,5 @@ esac
 # Omit the file size; a plain 'll' tells this, too.
 # The commit date is different from the file's date in the working copy and may
 # be important, to leave that in.
+set -o pipefail
 svn ls -v "$@" | cut -c 1-20,31-
