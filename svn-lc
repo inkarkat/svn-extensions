@@ -3,14 +3,14 @@
 printUsage()
 {
     cat <<HELPTEXT
-Show logs together with diff between commits. 
-Note: If you supply -c|--change REV, you can just as well use "svn show REV". 
+Show logs together with diff between commits.
+Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 --grep regexp   Limit the commits to ones with log message that matches the
-		specified pattern. 
---author regexp	Limit to commits by author. 
-#--no-merge	Exclude any commits that mention merge in the revision summary. 
+		specified pattern.
+--author regexp	Limit to commits by author.
+#--no-merge	Exclude any commits that mention merge in the revision summary.
 --server	Instead of local history, only list server revisions that you
-		don't have yet. 
+		don't have yet.
 Usage: "$(basename "$1")" [-r|--revision ARG] [-l|--limit ARG] [--server|PATH] [-?|-h|--help]
 HELPTEXT
 }
@@ -23,7 +23,7 @@ getRevisions()
     fi
     if [ "$grepArgs" ]; then
 	# XXX: Need matches() XSLT 2 function for regexp-based pattern matching.
-	# Unfortunately, this isn't yet supported by xmlstarlet / libxslt. 
+	# Unfortunately, this isn't yet supported by xmlstarlet / libxslt.
 	#xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'matches(msg,\"${grepArgs}\")'"
 	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'contains(msg,\"${grepArgs}\")'"
     fi
@@ -58,7 +58,7 @@ do
 			serverRevisionsArgs=$(svn-serverrevs)
 			# Only add the revision filter for getRevisions() here,
 			# the server repo URL must be passed to all svn
-			# commands. 
+			# commands.
 			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
 			;;
 	*)
@@ -68,11 +68,12 @@ do
     esac
 done
 if [ "$serverRevisionsArgs" ]; then
-    # Only append the server repo URL here; the revision selection is done by the loop. 
+    # Only append the server repo URL here; the revision selection is done by the loop.
     allargs+=("${serverRevisionsArgs##* }")
 fi
 
+set -o pipefail
 getRevisions | while read revision
 do
-    svn-wrapper log --incremental -c "$revision" "${allargs[@]}" && svn-wrapper diff -c "$revision" "${allargs[@]}"
+    svn-wrapper log --incremental --change "$revision" "${allargs[@]}" && svn-dp --change "$revision" "${allargs[@]}"
 done | less --RAW-CONTROL-CHARS
