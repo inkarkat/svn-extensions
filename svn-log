@@ -64,7 +64,7 @@ x
 
 extractHeaderItem()
 {
-    sed -ne "s/^${1}: \\+//p" "$2"
+    sed -ne "s/^${1}: \\+//p"
 }
 extractRevisionMessage()
 {
@@ -73,7 +73,7 @@ extractRevisionMessage()
 /^Author:/d
 /^Date:/d
 /^Changed paths:/,/^revision r[0-9]\+$/d
-' "$1"
+'
 }
 showNoMatch()
 {
@@ -90,12 +90,12 @@ processRevision()
     isSkip=
 
     if [ "$authorArgs" ]; then
-	extractHeaderItem 'Author' "$FILE" | grep -q "$authorArgs" || isSkip='true'
+	printf '%s\n' "$1" | extractHeaderItem 'Author' | grep -q "$authorArgs" || isSkip='true'
     fi
     if [ "$grepArgs" ]; then
 	# Filter away the revision header and changed file list, and
 	# try to match the regexp in the remaining revision message.
-	extractRevisionMessage "$FILE" | grep -q "$grepArgs" || isSkip='true'
+	printf '%s\n' "$1" | extractRevisionMessage | grep -q "$grepArgs" || isSkip='true'
     fi
 
     if [ "$isSkip" ]; then
@@ -105,9 +105,9 @@ processRevision()
 	    # Let (another pass of) grep highlight the matches.
 	    # We include all lines (but without highlighting) with
 	    # the regexp /$/.
-	    grep $grepOptions -e "$grepArgs" -e '$' "$FILE"
+	    printf '%s\n' "$1" | grep $grepOptions -e "$grepArgs" -e '$'
 	else
-	    cat "$FILE"
+	    printf '%s\n' "$1"
 	fi | colorize
 	# Must do fine-grained colorization here so that the results
 	# appear immediately, to avoid buffering in the pipe.
@@ -115,7 +115,7 @@ processRevision()
 }
 grepFilter()
 {
-    TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
+    revisionLog=
 
     revision=
     while IFS='
@@ -123,26 +123,25 @@ grepFilter()
     do
 	case "$line" in
 	    revision\ r+([0-9]))
-		if [ -r "$TMPFILE" ]; then
-		    processRevision "$TMPFILE"
+		if [ "$revisionLog" ]; then
+		    processRevision "$revisionLog"
 		fi
 
 		revision=$line
 		# Start a new temporary revision file.
-		echo "$line" > "$TMPFILE"
+		revisionLog=$line
 		;;
 	    *)
-		echo "$line" >> "$TMPFILE"
+		revisionLog="$revisionLog
+$line"
 		;;
 	esac
     done
 
     # Process the very last revision, too.
-    if [ -r "$TMPFILE" ]; then
-	processRevision "$TMPFILE"
+    if [ "$revisionLog" ]; then
+	processRevision "$revisionLog"
     fi
-
-    rm "$TMPFILE" 2>/dev/null
 }
 
 : ${COLOR_HEADER:='[36m'}
