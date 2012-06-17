@@ -21,10 +21,8 @@ diffOptions=
 diffStatArgs=
 
 # Highlight diff output if available.
-colordiffCommand=
-if which colordiff >/dev/null 2>&1; then
-    colordiffCommand='--diff-cmd colordiff'
-fi
+hasColorDiff=
+which colordiff >/dev/null 2>&1 && hasColorDiff=t
 
 typeset -a allargs=()
 # Simplify setting common diff options (that do not overlap with svn options).
@@ -56,7 +54,7 @@ do
 	    ;;
 	--no-color)
 	    shift
-	    colordiffCommand=
+	    hasColorDiff=
 	    ;;
 	*)
 	    allargs+=("$1")
@@ -73,6 +71,12 @@ set -o pipefail
 [ "$diffOptions" ] && svnDiffOptions="-x \"-u ${diffOptions}\""
 if [ "$diffStatArgs" ]; then
     eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | diffstat $diffStatArgs
+elif [ "$hasColorDiff" ]; then
+    # Pipe through colordiff instead of using svn --diff-cmd colordiff, because
+    # svn only pipes the diff output itself, but not the diff header ("Index:
+    # ...") through colordiff, and therefore the header isn't highlighted with
+    # the "cvsstuff" group in .colordiffrc.
+    svn diff --non-interactive $svnDiffOptions "${allargs[@]}" | colordiff | less --quit-on-intr --RAW-CONTROL-CHARS
 else
-    eval svn diff --non-interactive $svnDiffOptions '$colordiffCommand "${allargs[@]}"' | less --quit-on-intr --RAW-CONTROL-CHARS
+    svn diff --non-interactive $svnDiffOptions "${allargs[@]}" | less --quit-on-intr --RAW-CONTROL-CHARS
 fi
