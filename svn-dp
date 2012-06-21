@@ -7,10 +7,12 @@ printUsage()
     cat <<HELPTEXT
 Diff with predecessor, either current COMMITTED revision to PREV, or
 revision REV to its predecessor.
+With -b (ignore space change) and -w (ignore all white space) options.
+Can also show statistics with --stat, --numstat and --shortstat.
 --no-color	Turn off color highlighting.
 Note: The [@REV] is only a revision peg for use on the server; you cannot
 specify a local revision with it.
-Usage: "$(basename "$1")" [[-c|--change] REV [[-c|--change] REV ...]] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
+Usage: "$(basename "$1")" [-b] [-w] [[-c|--change] REV [[-c|--change] REV ...]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
