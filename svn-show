@@ -6,7 +6,10 @@ printUsage()
 {
     cat <<HELPTEXT
 Show log message and textual diff for a particular commit.
-Usage: "$(basename "$1")" [[-c|--change] REV [[-c|--change] REV ...]] [--no-color] [-?|-h|--help]
+With -b (ignore space change) and -w (ignore all white space) options.
+Can also show statistics with --stat, --numstat and --shortstat.
+--no-color	Turn off colored diff.
+Usage: "$(basename "$1")" [-b] [-w] [[-c|--change] REV [[-c|--change] REV ...]] [--stat|--numstat|--shortstat] [--no-color] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -15,6 +18,7 @@ case "$1" in
 esac
 
 typeset -a allargs=()
+typeset -a diffargs=()
 typeset -a revisions=()
 while [ $# -gt 0 ]
 do
@@ -22,6 +26,8 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--change|-c)	shift; revisions+=("$1"); shift;;
 	?(r)+([0-9]))	       revisions+=("${1#r}"); shift;;
+	-b|-w|--stat|--numstat|--shortstat)
+			diffargs+=("$1"); shift;;
 	*)
 	    allargs+=("$1")
 	    shift
@@ -36,6 +42,6 @@ if [ ${#revisions[@]} -eq 0 ]; then
 else
     for revision in "${revisions[@]}"
     do
-	svn-wrapper log --incremental --change "$revision" "${allargs[@]}" && svn-dp --change "$revision" "${allargs[@]}"
+	svn-wrapper log --incremental --change "$revision" "${allargs[@]}" && svn-dp --change "$revision" "${diffargs[@]}" "${allargs[@]}"
     done | less --quit-on-intr --RAW-CONTROL-CHARS
 fi
