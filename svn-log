@@ -86,7 +86,6 @@ showNoMatch()
 }
 processRevision()
 {
-    local -r FILE=${1:?}
     isSkip=
 
     if [ "$authorArgs" ]; then
