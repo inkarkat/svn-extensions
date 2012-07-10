@@ -9,7 +9,7 @@ Show log message and textual diff for a particular commit.
 With -b (ignore space change) and -w (ignore all white space) options.
 Can also show statistics with --stat, --numstat and --shortstat.
 --no-color	Turn off colored diff.
-Usage: "$(basename "$1")" [-b] [-w] [[-c|--change] REV [[-c|--change] REV ...]] [--stat|--numstat|--shortstat] [--no-color] [-?|-h|--help]
+Usage: "$(basename "$1")" [-b] [-w] [[-r|--revision] REV [[-r|--revision] REV ...]] [--stat|--numstat|--shortstat] [--no-color] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -25,6 +25,7 @@ do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--change|-c)	shift; revisions+=("$1"); shift;;
+	--revision|-r)	shift; revisions+=("$1"); shift;;
 	?(r)+([0-9]))	       revisions+=("${1#r}"); shift;;
 	-b|-w|--stat|--numstat|--shortstat)
 			diffargs+=("$1"); shift;;
