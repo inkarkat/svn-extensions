@@ -4,12 +4,13 @@ set -o pipefail
 printUsage()
 {
     cat <<HELPTEXT
-Internal helper script. 
+Internal helper script.
 Usage: "$(basename "$1")"
 HELPTEXT
 }
 
-repositoryUrl=$(svn info --non-interactive "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $? 
-wcRevision=$(svn info --non-interactive "$@" | sed -n -e 's/^Revision: \(.*\)$/\1/p') || exit $? 
+set -o pipefail
+repositoryUrl=$(svn info --non-interactive "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $?
+wcRevision=$(svn info --non-interactive "$@" | sed -n -e 's/^Revision: \(.*\)$/\1/p') || exit $?
 
 echo "-r HEAD:$((wcRevision + 1)) $repositoryUrl"
