@@ -1,0 +1,32 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show the product version for the current repo / passed revision(s).
+Usage: "$(basename "$1") [[-r|--revision] REV]"
+HELPTEXT
+}
+
+shopt -qs extglob
+typeset -a revisions=()
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--revision|-r)	shift; revisions+=("$1"); shift;;
+	?(r)+([0-9]))	       revisions+=("${1#r}"); shift;;
+    esac
+done
+
+set -o pipefail
+if [ ${#revisions[@]} -eq 0 ]; then
+    revisions+=($(svn info --non-interactive "${PROJECTROOT:?}" | sed -n -e 's/^Revision: \(.*\)$/\1/p')) || exit $?
+fi
+
+repositoryUrl=$(svn info --non-interactive "${PROJECTROOT:?}" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $?
+for revision in "${revisions[@]}"
+do
+    version=$(svn --non-interactive cat --revision "$revision" "${repositoryUrl}/data/version") || exit $?
+    printf '%s.%s\n' "$version" "$revision"
+done | less --quit-on-intr --RAW-CONTROL-CHARS
