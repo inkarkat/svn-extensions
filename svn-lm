@@ -16,6 +16,4 @@ case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 
-USERNAME=ingo_karkat
-
-exec svn-lg --no-list-author --author "$USERNAME" "$@"
+exec svn-lg --no-list-author --author "${SVNUSER:-$USERNAME}" "$@"
