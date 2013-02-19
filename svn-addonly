@@ -16,13 +16,13 @@ for filespec
 do
     if [ ! -d "$filespec" ]; then
 	dirspec=$(dirname -- "$filespec")
-	if svn status "$dirspec" | grep -q '^\?' > /dev/null; then
+	if svn status --non-interactive "$dirspec" | grep -q '^\?' > /dev/null; then
 	    # The directory of the file to be added is not yet under version
 	    # control; add it first. 
-	    svn add --non-recursive "$dirspec" || { status=1; continue; }
+	    svn add --non-interactive --non-recursive "$dirspec" || { status=1; continue; }
 	fi
     fi
 
-    svn add --non-recursive "$filespec" || { status=1; continue; }
+    svn add --non-interactive --non-recursive "$filespec" || { status=1; continue; }
 done
 exit $status
