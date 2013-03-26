@@ -1,17 +1,22 @@
-#!/bin/sh
+#!/bin/bash
 
-printUsage()
-{
-    cat <<HELPTEXT
-Put binary files under version control when the default config prescribes
-svn:eol-style=native, which complains about non-text files. 
-Usage: "$(basename "$1")" [-?|-h|--help] PATH...
-HELPTEXT
-}
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-esac
+svn add "$@" || exit $?
 
-[ $# -gt 0 ] || { printUsage "$0"; exit 1; }
-
-svn add --config-option 'config:auto-props:*=' "$@"
+if [ "$(uname -o 2>/dev/null)" = "Cygwin" ]; then
+    for filespec
+    do
+	if [ -f "$filespec" ]; then
+	    extension=${filespec##*.}
+	    if [[ ";${PATHEXT^^};" = *";.${extension^^};"* ]]; then
+		echo "$filespec is executable"
+	    else
+		# According to Windows, the file is not executable, but Cygwin
+		# treats all files on the Windows file systems as executable
+		# (unless explicitly modified via chmod), and Subversion's
+		# Automatic Property Setting feature adds svn:executable
+		# properties. Strip them off for this file.
+		svn propdel svn:executable "$filespec"
+	    fi
+	fi
+    done
+fi
