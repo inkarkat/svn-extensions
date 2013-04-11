@@ -1,0 +1,61 @@
+#!/bin/bash
+
+readonly commitMessage=svn-commit.tmp
+readonly boilerplateStartLinePattern='^--This line, and those below, will be ignored--$'
+
+if [ ! -r "$commitMessage" ]; then
+    exec svn commit "$@"
+fi
+
+removeCommitMessage()
+{
+    rm -- "$commitMessage"
+}
+
+if [ $(sed -n -e "/${boilerplateStartLinePattern}/q" -e '/^[ \t]*$/!p' "$commitMessage" | wc -l) -eq 0 ]; then
+    removeCommitMessage && echo >&2 'Removed empty saved commit message.'
+    exec svn commit "$@"
+fi
+
+echo "Found a saved commit message ${commitMessage}:"
+sed -e "/${boilerplateStartLinePattern}/{g;q}" "$commitMessage"
+
+printf %s "Do you want to (e)dit, (u)se directly, (d)iscard this saved commit message, or (c)ancel? (e/u/d/c) "
+read answer
+case $answer in
+    [eu])   ;;
+    d)	    removeCommitMessage; exit $?;;
+    c)	    exit 1;;
+    *)	    exit 1;;
+esac
+
+# Note: Use a similar syntax for the temp file name to aid file type detection
+# by the editor.
+TMPFILE=$(mktemp --tmpdir "svn-commit-XXXXXX.tmp" 2>/dev/null || echo "${TEMP:-/tmp}/svn-commit-$$.tmp")
+cleanup()
+{
+    # Something went wrong when TMPFILE still exists; move it back to the saved
+    # commit message so that the process can be repeated.
+    [ -r "$TMPFILE" ] && mv -- "$TMPFILE" "$commitMessage" 2>/dev/null
+}
+[ "$DEBUG" ] || trap 'cleanup' EXIT
+mv -- "$commitMessage" "$TMPFILE" || exit $?
+
+if [ "$answer" = 'e' ]; then
+    if ! "$EDITOR" "$TMPFILE"; then
+	echo 2>&1 "Unclean exit of editor; aborting, with the message back in ${commitMessage}!"
+	status=$?
+	cleanup
+	exit $status
+    fi
+fi
+
+# Remove the boilerplate.
+sed -i -e "/${boilerplateStartLinePattern}/{g;q}" "$TMPFILE"
+
+if svn commit --file "$TMPFILE" "$@"; then
+    # Remove the temporary message file after a successful commit to avoid that
+    # the cleanup reinstates it as the original saved commit message.
+    rm -- "$TMPFILE" 2>/dev/null
+    exit 0
+fi
