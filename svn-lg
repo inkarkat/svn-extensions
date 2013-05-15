@@ -5,15 +5,15 @@ shopt -qs extglob 2>/dev/null
 printUsage()
 {
     cat <<HELPTEXT
-One-line log messages with author, date and commit summary. 
---no-merge	Exclude any commits that mention merge in the revision summary. 
---author regexp	Limit to commits by author. 
+One-line log messages with author, date and commit summary.
+--no-merge	Exclude any commits that mention merge in the revision summary.
+--author regexp	Limit to commits by author.
 --no-list-author Omit the author name from the log; happens automatically if
-		regexp is literal text. 
---no-color	Turn off color highlighting. 
+		regexp is literal text.
+--no-color	Turn off color highlighting.
 --server	Instead of local history, only list server revisions that you
-		don't have yet. 
-Note: svn log option -v is not supported here, but also doesn't make sense here. 
+		don't have yet.
+Note: svn log option -v is not supported here, but also doesn't make sense here.
 Usage: "$(basename "$1")" [--no-merge] [--author regexp] [--no-list-author] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
@@ -48,7 +48,7 @@ do
 			authorArgs=$1;
 			shift;
 			# DWIM: When the author is no regexp, omit the known
-			# name from the log. 
+			# name from the log.
 			[[ "$authorArgs" == +([- _a-zA-Z]) ]] && isListAuthor=
 			;;
 	--server)	shift; isServerRevisions='true';;
@@ -63,6 +63,7 @@ if [ "$isServerRevisions" ]; then
 fi
 
 readonly today=$(date +%F)
+set -o pipefail
 svn log --non-interactive "${allargs[@]}" | sed --unbuffered -n -e "${authorArgs:+/^r[0-9]\+ | [^|]*${authorArgs}[^|]* |/!d}" -e '
 /^r[0-9]\+/{
 '"/ | ${today} /  "'s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *[^ |]\+ \([^ |]\+\) [^|]*|.*/\1 ('"${isListAuthor:+\2, }"'\3) /
