@@ -151,6 +151,21 @@ $line"
 	processRevision "$revisionLog"
     fi
 }
+limitFilter()
+{
+    while IFS='
+' read -r line
+    do
+	case "$line" in
+	    revision\ r+([0-9]))
+		let limit-=1;;
+	esac
+
+	if [ $limit -ge 0 ]; then
+	    printf '%s\n' "$line"
+	fi
+    done
+}
 
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_FILEADDED:='[32m'}
@@ -209,7 +224,8 @@ if [ "$limit" -a "$mergeFilter" = 'cat' -a "$grepFilter" = 'cat' ]; then
     # When we do not need to do revision filtering, we can let svn log handle
     # the limit itself.
     allargs+=(--limit $limit)
-    limit=
+else
+    limitFilter="limitFilter"
 fi
 
 set -o pipefail
