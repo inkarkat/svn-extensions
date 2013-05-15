@@ -151,26 +151,6 @@ $line"
 	processRevision "$revisionLog"
     fi
 }
-limitFilter()
-{
-    while IFS='
-' read -r line
-    do
-	case "$line" in
-	    revision\ r+([0-9]))
-		let limit-=1
-		if [ $limit -lt 0 ]; then
-		    # Close stdin to shut down the feeding svn command. It will
-		    # complain with "svn: Write error: Broken pipe".
-		    exec 0<&-
-		    break
-		fi
-		;;
-	esac
-
-	printf '%s\n' "$line"
-    done
-}
 
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_FILEADDED:='[32m'}
@@ -229,8 +209,7 @@ if [ "$limit" -a "$mergeFilter" = 'cat' -a "$grepFilter" = 'cat' ]; then
     # When we do not need to do revision filtering, we can let svn log handle
     # the limit itself.
     allargs+=(--limit $limit)
-else
-    limitFilter="limitFilter"
+    limit=
 fi
 
 set -o pipefail
