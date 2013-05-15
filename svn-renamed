@@ -6,7 +6,10 @@ printUsage()
 List the new path after file moves and renames and the corresponding revision.
 --server	Instead of local history, only consider server revisions that
 		you don't have yet.
-Usage: "$(basename "$1")" [-r|--revision ARG] [-l|--limit ARG] [--server|PATH] [-?|-h|--help]
+--from		List the old path before the file move / rename in the revision
+		instead.
+--omit-revision	Omit the revision from the output; just print the changed paths.
+Usage: "$(basename "$1")" [-r|--revision ARG] [-l|--limit ARG] [--from] [--omit-revision] [--server|PATH] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -24,12 +27,18 @@ getPath()
 
 printChangedPath()
 {
-    printf 'r%s\t%s\n' "$1" "$2"
+    if [ "$isOmitRevision" ]; then
+	printf '%s\n' "$2"
+    else
+	printf 'r%s\t%s\n' "$1" "$2"
+    fi
 }
 
 
 revisionRangeArgs=
 serverRevisionsArgs=
+isFromPath=
+isOmitRevision=
 typeset -a allargs=()
 while [ $# -gt 0 ]
 do
@@ -45,6 +54,9 @@ do
 			# commands.
 			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
 			;;
+	--from)		shift; isFrom=t;;
+	--omit-revision)
+			shift; isOmitRevision=;;
 	*)
 	    allargs+=("$1")
 	    shift
@@ -58,8 +70,6 @@ fi
 
 set -o pipefail
 repositoryRoot=$(svn info --non-interactive "${allargs[@]}" | sed -n -e 's/^Repository Root: \(.*\)$/\1/p') || exit $?
-previousRevision='working copy'
-previousPath=$(getPath "${allargs[@]}") || exit $?
 hasPathChanges=
 getRevisions | while read revision
 do
@@ -71,11 +81,15 @@ do
     fi
 
     path=$(getPath --revision "$revision" "${allargs[@]}") || exit $?
-    if [ "$path" != "$previousPath" ]; then
-	hasPathChanges=t
-	printChangedPath "$previousRevision" "$previousPath"
+    if [ "$previousPath" -a "$path" != "$previousPath" ]; then
+	if [ "$isFrom" ]; then
+	    printChangedPath "$previousRevision" "$path"
+	else
+	    hasPathChanges=t
+	    printChangedPath "$previousRevision" "$previousPath"
+	fi
     fi
 
     previousRevision=$revision
     previousPath=$path
-done | less --RAW-CONTROL-CHARS
+done | less --quit-on-intr --RAW-CONTROL-CHARS
