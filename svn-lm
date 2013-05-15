@@ -3,12 +3,12 @@
 printUsage()
 {
     cat <<HELPTEXT
-One-line log messages with date and commit summary of my commits. 
-Like "svn lg" filtered for my personal commits. 
---no-merge	Exclude any commits that mention merge in the revision summary. 
+One-line log messages with date and commit summary of my commits.
+Like "svn lg" filtered for my personal commits.
+--no-merge	Exclude any commits that mention merge in the revision summary.
 --server	Instead of local history, only list server revisions that you
-		don't have yet. 
-Note: svn log option -v is not supported here, but also doesn't make sense here. 
+		don't have yet.
+Note: svn log option -v is not supported here, but also doesn't make sense here.
 Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
@@ -16,4 +16,4 @@ case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 
-exec svn-lg --no-list-author --author "${SVNUSER:-$USERNAME}" "$@"
+exec svn-lg --no-list-author --author "${SVNUSER:-$USER}" "$@"
