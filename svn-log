@@ -116,7 +116,7 @@ processRevision()
 	    printf '%s\n' "$1" | grep $grepOptions -e "$grepArgs" -e '$'
 	else
 	    printf '%s\n' "$1"
-	fi | colorize
+	fi
 	# Must do fine-grained colorization here so that the results
 	# appear immediately, to avoid buffering in the pipe.
     fi
@@ -151,6 +151,26 @@ $line"
 	processRevision "$revisionLog"
     fi
 }
+limitFilter()
+{
+    while IFS='
+' read -r line
+    do
+	case "$line" in
+	    revision\ r+([0-9]))
+		let limit-=1
+		if [ $limit -lt 0 ]; then
+		    # Close stdin to shut down the feeding svn command. It will
+		    # complain with "svn: Write error: Broken pipe".
+		    exec 0<&-
+		    break
+		fi
+		;;
+	esac
+
+	printf '%s\n' "$line"
+    done
+}
 
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_FILEADDED:='[32m'}
@@ -159,10 +179,7 @@ $line"
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    if [ "$isNoColor" ]; then
-	cat
-    else
-	sed --unbuffered --unbuffered -e "
+    sed --unbuffered --unbuffered -e "
 s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
 /^Changed paths:/,/^\$/ {
     s/^ \\+A .*\$/${COLOR_FILEADDED}\\0${COLOR_RESET}/
@@ -170,11 +187,13 @@ s/^revision r[0-9]\\+$/${COLOR_HEADER}\\0${COLOR_RESET}/
     s/^ \\+R .*\$/${COLOR_FILEREMOVED}\\0${COLOR_RESET}/
 }
 "
-    fi
 }
 
+typeset limit=
+typeset limitFilter=cat
 typeset mergeFilter=cat
-typeset finalFilter=colorize
+typeset grepFilter=cat
+typeset colorize=colorize
 typeset grepArgs=
 typeset grepOptions=
 case "$GREP_OPTIONS" in
@@ -184,7 +203,6 @@ case "$GREP_OPTIONS" in
     *--color=always*) grepOptions='--color=always';;
 esac
 typeset authorArgs=
-typeset isNoColor=
 typeset isServerRevisions=
 
 typeset -a allargs=()
@@ -192,10 +210,11 @@ while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--limit|-l)	shift; limit=$1; shift;;
 	--no-merge)	shift; mergeFilter='mergeFilter';;
-	--no-color)	shift; isNoColor='true';;
-	--grep)		shift; finalFilter='grepFilter'; grepArgs=$1; shift;;
-	--author)	shift; finalFilter='grepFilter'; authorArgs=$1; shift;;
+	--no-color)	shift; colorize='cat';;
+	--grep)		shift; grepFilter='grepFilter'; grepArgs=$1; shift;;
+	--author)	shift; grepFilter='grepFilter'; authorArgs=$1; shift;;
 	--server)	shift; isServerRevisions='true';;
 	*)
 	    allargs+=("$1")
@@ -205,6 +224,13 @@ do
 done
 if [ "$isServerRevisions" ]; then
     allargs+=($(svn-serverrevs))
+fi
+if [ "$limit" -a "$mergeFilter" = 'cat' -a "$grepFilter" = 'cat' ]; then
+    # When we do not need to do revision filtering, we can let svn log handle
+    # the limit itself.
+    allargs+=(--limit $limit)
+else
+    limitFilter="limitFilter"
 fi
 
 set -o pipefail
@@ -237,4 +263,4 @@ svn log --non-interactive "${allargs[@]}" | sed --unbuffered -e '
 
 # Indent revision message.
 s/^/    /
-' | $mergeFilter | $finalFilter | less --RAW-CONTROL-CHARS
+' | $mergeFilter | $grepFilter | $limitFilter | $colorize | less --RAW-CONTROL-CHARS
