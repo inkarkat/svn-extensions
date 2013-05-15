@@ -19,14 +19,17 @@ do
     esac
 done
 
+: ${SVN_REPO_ROOT:=${PROJECTROOT:-.}}
+: ${SVN_PRODUCT_VERSION_PATH:=data/version}
+
 set -o pipefail
 if [ ${#revisions[@]} -eq 0 ]; then
-    revisions+=($(svn info --non-interactive "${PROJECTROOT:?}" | sed -n -e 's/^Revision: \(.*\)$/\1/p')) || exit $?
+    revisions+=($(svn info --non-interactive "$SVN_REPO_ROOT" | sed -n -e 's/^Revision: \(.*\)$/\1/p')) || exit $?
 fi
 
-repositoryUrl=$(svn info --non-interactive "${PROJECTROOT:?}" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $?
+repositoryUrl=$(svn info --non-interactive "$SVN_REPO_ROOT" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $?
 for revision in "${revisions[@]}"
 do
-    version=$(svn --non-interactive cat --revision "$revision" "${repositoryUrl}/data/version") || exit $?
+    version=$(svn --non-interactive cat --revision "$revision" "${repositoryUrl}/${SVN_PRODUCT_VERSION_PATH}") || exit $?
     printf '%s.%s\n' "$version" "$revision"
 done | less --quit-on-intr --RAW-CONTROL-CHARS
