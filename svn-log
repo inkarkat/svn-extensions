@@ -84,6 +84,14 @@ showNoMatch()
     # digits in the revision decreases.
     [ "$1" ] && printf >&2 '%s\r' "${1} "
 }
+clearNoMatch()
+{
+    # Clear the temporary status to avoid interference with the regular output.
+    # This is no problem with "less", because it redraws the entire terminal,
+    # but it leaves the remainder of the status, e.g. when piping the log output
+    # into "svn revisions", making copy-and-paste cumbersome.
+    printf >&2 '                    \r'
+}
 processRevision()
 {
     isSkip=
@@ -100,6 +108,7 @@ processRevision()
     if [ "$isSkip" ]; then
 	showNoMatch "$revision"
     else
+	clearNoMatch
 	if [ "$grepArgs" -a "$grepOptions" ]; then
 	    # Let (another pass of) grep highlight the matches.
 	    # We include all lines (but without highlighting) with
