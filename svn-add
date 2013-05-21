@@ -3,6 +3,9 @@
 svn add "$@" || exit $?
 
 if [ "$(uname -o 2>/dev/null)" = "Cygwin" ]; then
+    # Note: This ignores recursive adding of files contained in added
+    # directories. As a workaround, use for those "svn addonly" on the directory
+    # first.
     for filespec
     do
 	if [ -f "$filespec" ]; then
