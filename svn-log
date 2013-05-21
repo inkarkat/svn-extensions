@@ -158,12 +158,17 @@ limitFilter()
     do
 	case "$line" in
 	    revision\ r+([0-9]))
-		let limit-=1;;
+		let limit-=1
+		if [ $limit -lt 0 ]; then
+		    # Close stdin to shut down the feeding svn command. It will
+		    # complain with "svn: Write error: Broken pipe".
+		    exec 0<&-
+		    break
+		fi
+		;;
 	esac
 
-	if [ $limit -ge 0 ]; then
-	    printf '%s\n' "$line"
-	fi
+	printf '%s\n' "$line"
     done
 }
 
@@ -229,7 +234,7 @@ else
 fi
 
 set -o pipefail
-svn log --non-interactive "${allargs[@]}" | sed --unbuffered -e '
+svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pipe') | sed --unbuffered -e '
 /^r[0-9]\+/{
     # Expand revision info into multi-line header.
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
