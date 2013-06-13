@@ -50,8 +50,10 @@ if [ "$answer" = 'e' ]; then
     fi
 fi
 
-# Remove the boilerplate.
+# Remove the boilerplate ...
 sed -i -e "/${boilerplateStartLinePattern}/{g;q}" "$TMPFILE"
+# ... and any trailing blank lines at the end of the message.
+sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$TMPFILE"
 
 if svn commit --file "$TMPFILE" "$@"; then
     # Remove the temporary message file after a successful commit to avoid that
