@@ -1,0 +1,31 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Duplicate something in working copy or repository, remembering history.
+Use --force to avoid the error that the DST already exists.
+Usage: "$(basename "$1")" [-f|--force] [-?|-h|--help] SRC[@REV]... DST
+HELPTEXT
+}
+
+deleteExistingFile()
+{
+    if [ -f "$2" ]; then
+	targetFilespec=$2
+    elif [ -d "$2" ]; then
+	targetFilespec="${2%/}/$(basename -- "$1")"
+    else
+	echo >&2 "svn-cp: '$2' does not exist"
+	exit 1
+    fi
+
+    svn delete --force "$targetFilespec" || exit $?
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    -f|--force)		shift; deleteExistingFile "$@";;
+esac
+
+svn cp "$@"
