@@ -16,7 +16,7 @@ deleteExistingFile()
     elif [ -d "$2" ]; then
 	targetFilespec="${2%/}/$(basename -- "$1")"
     else
-	echo >&2 "svn-cp: '$2' does not exist"
+	echo >&2 "svn-copy: '$2' does not exist"
 	exit 1
     fi
 
