@@ -3,9 +3,24 @@
 readonly commitMessage=svn-commit.tmp
 readonly boilerplateStartLinePattern='^--This line, and those below, will be ignored--$'
 
-if [ ! -r "$commitMessage" ]; then
+if [ ! -r "$commitMessage" -a $# -eq 0 ]; then
     exec svn commit "$@"
 fi
+
+# When individual files are committed, Subversion places the commit message into
+# the common directory root. We need to find that one, too.
+typeset -a files=()
+for arg
+do
+    [ -r "$arg" ] && files+=("$arg")
+done
+if [ ${#files} -gt 0 ]; then
+    commonDir=$(commonpath "${files[@]}")
+fi
+if [ ! -r "${commonDir}/$commitMessage" ]; then
+    exec svn commit "$@"
+fi
+
 
 removeCommitMessage()
 {
