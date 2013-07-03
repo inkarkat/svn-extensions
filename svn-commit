@@ -1,23 +1,28 @@
 #!/bin/bash
 
-readonly commitMessage=svn-commit.tmp
+commitMessage=svn-commit.tmp
 readonly boilerplateStartLinePattern='^--This line, and those below, will be ignored--$'
 
 if [ ! -r "$commitMessage" -a $# -eq 0 ]; then
     exec svn commit "$@"
 fi
 
-# When individual files are committed, Subversion places the commit message into
-# the common directory root. We need to find that one, too.
+# Are individual files committed?
 typeset -a files=()
 for arg
 do
     [ -r "$arg" ] && files+=("$arg")
 done
-if [ ${#files} -gt 0 ]; then
-    commonDir=$(commonpath "${files[@]}")
+# Check the current directory's saved commit message, too. We may have realized
+# during the commit that we only want to commit a partial set of files, abort,
+# and then relaunch the commit with file arguments.
+if [ ! -r "$commitMessage" -a ${#files} -gt 0 ]; then
+    # When individual files are committed, Subversion places the commit message
+    # into the common directory root. We need to find that one, too.
+    readonly commonDir=$(commonpath "${files[@]}")
+    commitMessage="${commonDir}/$commitMessage"
 fi
-if [ ! -r "${commonDir}/$commitMessage" ]; then
+if [ ! -r "$commitMessage" ]; then
     exec svn commit "$@"
 fi
 
