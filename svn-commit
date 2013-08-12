@@ -44,7 +44,7 @@ printf %s "Do you want to (e)dit, (u)se directly, (d)iscard this saved commit me
 read answer
 case $answer in
     [eu])   ;;
-    d)	    removeCommitMessage; exit $?;;
+    d)	    removeCommitMessage; exec svn commit "$@";;
     c)	    exit 1;;
     *)	    exit 1;;
 esac
