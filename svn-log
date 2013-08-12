@@ -225,12 +225,14 @@ done
 if [ "$isServerRevisions" ]; then
     allargs+=($(svn-serverrevs))
 fi
-if [ "$limit" -a "$mergeFilter" = 'cat' -a "$grepFilter" = 'cat' ]; then
-    # When we do not need to do revision filtering, we can let svn log handle
-    # the limit itself.
-    allargs+=(--limit $limit)
-else
-    limitFilter="limitFilter"
+if [ "$limit" ]; then
+    if [ "$mergeFilter" = 'cat' -a "$grepFilter" = 'cat' ]; then
+	# When we do not need to do revision filtering, we can let svn log handle
+	# the limit itself.
+	allargs+=(--limit $limit)
+    else
+	limitFilter="limitFilter"
+    fi
 fi
 
 set -o pipefail
