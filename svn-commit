@@ -1,10 +1,78 @@
 #!/bin/bash
 
+set -o pipefail
+# Enable extended file pattern matching operators from ksh
+# (?(pattern-list), !(pattern-list), ...) in Bash.
+shopt -qs extglob
+
+revision=
+committedFile=
+svnCommit()
+{
+    getCommittedFile "$@"
+echo "**** committed File: $committedFile"
+    svn commit "$@" || exit $?
+    getCommitRevision "$@"
+echo "**** committed revision: $revision"
+}
+
+getCommittedFile()
+{
+    # We cannot capture the output from svn commit; it may launch the
+    # interactive editor for the commit message, so we cannot invoke it inside a
+    # pipeline. Instead, grab the committed revision from one of the files.
+
+    # Filter out arguments specific to svn commit, so that the rest can be
+    # passed to svn status; we need to observe stuff like --changelist.
+    typeset -a commonArguments=()
+    local isSkipNext=
+    for arg
+    do
+	if [ "$isSkipNext" ]; then
+	    isSkipNext=
+	    continue
+	fi
+
+	case "$arg" in
+	    --targets|-m|--message|-F|--file|--editor-cmd|--encoding|--with-revprop) isSkipNext=t;;
+	    --no-unlock|--force-log|--keep-changelists) ;;
+	    *)	commonArguments+=("$arg");;
+	esac
+    done
+
+    lastArg=
+    [ ${#commonArguments[@]} -gt 0 ] && lastArg=${commonArguments[${#commonArguments[@]} - 1]}
+    if [ -f "$lastArg" ]; then
+	# Shortcut: The last argument is a file; use that.
+	committedFile=$lastArg
+    else
+	# Get one commited file from the commit via svn status.
+	committedFile=$(svn status --non-interactive "$@" 2>/dev/null | sed -ne '/^[AMR].\{7\}\|^.M.\{6\}/{ s/^.\{8\}//p; q}')
+    fi
+}
+
+getCommitRevision()
+{
+    if [ ! "$committedFile" -o ! -f "$committedFile" ]; then
+	echo >&2 "Failed to determine a committed file; cannot run any post commit hook."
+	exit 1
+    fi
+
+    revision=$(svn info --non-interactive "$committedFile" | sed -ne 's/^Revision: //p') || return
+
+    if [ "$revision" -a -x svn-post-commit ]; then
+	svn-post-commit "$revision" "$@"
+    fi
+}
+
+
+
 commitMessage=svn-commit.tmp
 readonly boilerplateStartLinePattern='^--This line, and those below, will be ignored--$'
 
 if [ ! -r "$commitMessage" -a $# -eq 0 ]; then
-    exec svn commit "$@"
+    svnCommit "$@"
+    exit $?
 fi
 
 # Are individual files committed?
@@ -23,7 +91,8 @@ if [ ! -r "$commitMessage" -a ${#files} -gt 0 ]; then
     commitMessage="${commonDir}/$commitMessage"
 fi
 if [ ! -r "$commitMessage" ]; then
-    exec svn commit "$@"
+    svnCommit "$@"
+    exit $?
 fi
 
 
@@ -34,7 +103,8 @@ removeCommitMessage()
 
 if [ $(sed -n -e "/${boilerplateStartLinePattern}/q" -e '/^[ \t]*$/!p' "$commitMessage" | wc -l) -eq 0 ]; then
     removeCommitMessage && echo >&2 'Removed empty saved commit message.'
-    exec svn commit "$@"
+    svnCommit "$@"
+    exit $?
 fi
 
 echo "Found a saved commit message ${commitMessage}:"
@@ -44,7 +114,7 @@ printf %s "Do you want to (e)dit, (u)se directly, (d)iscard this saved commit me
 read answer
 case $answer in
     [eu])   ;;
-    d)	    removeCommitMessage; exec svn commit "$@";;
+    d)	    removeCommitMessage; svnCommit "$@"; exit $?;;
     c)	    exit 1;;
     *)	    exit 1;;
 esac
@@ -75,7 +145,7 @@ sed -i -e "/${boilerplateStartLinePattern}/{g;q}" "$TMPFILE"
 # ... and any trailing blank lines at the end of the message.
 sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$TMPFILE"
 
-if svn commit --file "$TMPFILE" "$@"; then
+if svnCommit --file "$TMPFILE" "$@"; then
     # Remove the temporary message file after a successful commit to avoid that
     # the cleanup reinstates it as the original saved commit message.
     rm -- "$TMPFILE" 2>/dev/null
