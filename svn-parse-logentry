@@ -1,0 +1,12 @@
+#!/usr/bin/awk --field-separator=' | '
+
+/^r[0-9]\+/ {
+    revision = $1
+    author = $2
+    timestamp_full = $3
+}
+# Capture the changed file list.
+/^Changed paths:/,/^$/ {
+    if ($0 == "Changed paths:") continue
+    changedFiles += $0 "\n"
+}
