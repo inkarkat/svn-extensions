@@ -5,16 +5,14 @@ printUsage()
     cat <<HELPTEXT
 Show logs together with diff between commits.
 Note: If you supply -c|--change REV, you can just as well use "svn show REV".
---grep REGEXP   Limit the commits to ones with log message that matches the
+--grep regexp   Limit the commits to ones with log message that matches the
 		specified pattern.
---author REGEXP	Limit to commits by author.
---prop only	Limit to commits that change properties.
---prop skip	Skip commits that only change properties.
+--author regexp	Limit to commits by author.
 #--no-merge	Exclude any commits that mention merge in the revision summary.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 --no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip] [-r|--revision ARG] [-l|--limit ARG] [--server|PATH] [-?|-h|--help]
+Usage: "$(basename "$1")" [-r|--revision ARG] [-l|--limit ARG] [--server|PATH] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -44,7 +42,6 @@ getRevisions()
 isMergeFilter=
 authorArgs=
 grepArgs=
-propFilterMethod=
 revisionRangeArgs=
 serverRevisionsArgs=
 typeset -a allargs=()
@@ -59,7 +56,6 @@ do
 	#--no-merge)	shift; isMergeFilter=true;;
 	--grep)		shift; grepArgs=$1; shift;;
 	--author)	shift; authorArgs=$1; shift;;
-	--prop)		shift; propFilterMethod="$1"; shift;;
 	--server)	shift
 			serverRevisionsArgs=$(svn-serverrevs)
 			# Only add the revision filter for getRevisions() here,
@@ -85,24 +81,5 @@ fi
 set -o pipefail
 getRevisions | while read revision
 do
-    if [ "$propFilterMethod" ]; then
-	case "$propFilterMethod" in
-	    only)   filterArg=--show; filterScope=diff;;    # Get the whole diff when there's a property change.
-	    skip)   filterArg=--hide; filterScope=minimal;; # When there are only property changes, nothing will be returned.
-	    *)	    echo >&2 "ERROR: Invalid parameter for --props: $propFilterMethod"; printUsage "$0"; exit 2;;
-	esac
-
-	diffContents=$(svn-dp --no-color --change "$revision" | svn-propfilter --no-color $filterArg --scope $filterScope)
-
-	if [ "$diffContents" ]; then
-	    # Alright, we have a diff to show, now get the log entry first.
-	    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}"
-	    # Then show the diff contents.
-	    isColorDiff=
-	    [ ${#colorargs[@]} -eq 0 ] && which colordiff >/dev/null 2>&1 && isColorDiff=t
-	    printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
-	fi
-    else
-	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}" && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
-    fi
+    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}" && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
 done | less --RAW-CONTROL-CHARS
