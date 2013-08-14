@@ -1,3 +1,56 @@
 #!/bin/bash
 
-echo "**** post-commit hook for r$1"
+readonly passedRevision=${1:?}
+echo "**** post-commit hook for $passedRevision"
+
+output()
+{
+    if type -t clipboard >/dev/null; then
+	tee >(clipboard)
+    else
+	cat
+    fi
+}
+
+eval "$(svn log -r "$passedRevision" | svn-parse-logentry)" || exit $?
+
+case "$summary" in
+    *QCCR*)
+	readonly branchFullName=$(svn-branchname)
+	readonly branchName=${branchFullName##*/}
+
+	eval "$(svn info -r "$passedRevision" | svn-parse-info)"
+
+	readonly RepositoryName=${RepositoryRoot##*/}
+	nonDefaultRepository=
+	if [ "$RepositoryName" != "$repository" ]; then
+	    nonDefaultRepository="${RepositoryName}'s "
+	fi
+
+	case "$repository" in
+	    hpsw-opr)		defaultAffected=opr-web.war;;
+	    hpsw-opr-config)	defaultAffected=opr-config-server.war;;
+	    *)			defaultAffected=;;
+	esac
+
+	readonly fixedVersion=$(opr-version)
+
+	output <<EOF
+TECHNICAL PROBLEM DESCRIPTION:
+
+SOLUTION:
+$description
+
+MODIFIED FILES (repository, branch and revision; per release):
+$revision on ${nonDefaultRepository}$branchName
+
+AFFECTED PROGRAMS/SCRIPTS/LIBRARIES:
+$defaultAffected
+
+DOCUMENTATION CHANGE:
+
+FIXED FOR VERSION:
+$fixedVersion
+EOF
+	;;
+esac
