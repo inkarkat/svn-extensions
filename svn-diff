@@ -13,7 +13,7 @@ Default is working copy to last commit; use
 -r PREV:COMMITTED (or svn dp) to show change in previous commit, and
 -r REV:COMMITTED to show changes across revisions.
 
-Usage: "$(basename "#1")" [-b] [-w] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
+Usage: "$(basename "$1")" [-b] [-w] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -76,7 +76,7 @@ elif [ "$hasColorDiff" ]; then
     # svn only pipes the diff output itself, but not the diff header ("Index:
     # ...") through colordiff, and therefore the header isn't highlighted with
     # the "cvsstuff" group in .colordiffrc.
-    svn diff --non-interactive $svnDiffOptions "${allargs[@]}" | colordiff | less --quit-on-intr --RAW-CONTROL-CHARS
+    eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | colordiff | less --quit-on-intr --RAW-CONTROL-CHARS
 else
-    svn diff --non-interactive $svnDiffOptions "${allargs[@]}" | less --quit-on-intr --RAW-CONTROL-CHARS
+    eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | less --quit-on-intr --RAW-CONTROL-CHARS
 fi
