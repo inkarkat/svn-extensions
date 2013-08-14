@@ -1,0 +1,143 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Filter the (so far uncolored) svn diff output to only / not show property
+changes, or to completely suppress the output when a property has [not] changed.
+--show		Output the scope when there's a property change.
+--hide		Do not output the scope when there's a property change.
+--scope minimal	Apply to property changes vs. actual file changes.
+--scope file	Apply within a single file change.
+--scope diff	Apply globally for the entire diff.
+--no-color	Turn off colored diff.
+By default, shows only property changes: --show --scope minimal
+Usage: svn diff ... | "$(basename "$1")" [--show|--hide] [--scope=minimal|file|diff] [--no-color] [-?|-h|--help]
+HELPTEXT
+}
+
+# Highlight diff output if available.
+hasColorDiff=
+which colordiff >/dev/null 2>&1 && hasColorDiff=t
+
+isShow=t
+scope=minimal
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--show)		shift; isShow=t;;
+	--hide)		shift; isShow=;;
+	--scope)	shift; scope="$1"; shift;;
+	--no-color)	shift; hasColorDiff=;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+
+
+processContents()
+{
+    [ "$1" ] || return
+
+    if printf '%s\n' "$1" | grep --quiet '^Property changes on: '; then
+	if [ "$isShow" ]; then
+	    printf '%s\n' "$1"
+	fi
+    else
+	if [ ! "$isShow" ]; then
+	    printf '%s\n' "$1"
+	fi
+    fi
+}
+
+
+# Slurp stdin into the temp file.
+TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
+cleanup()
+{
+    rm -f "$TMPFILE" 2>/dev/null
+}
+[ "$DEBUG" ] || trap 'cleanup' EXIT
+cat - > "$TMPFILE" || exit $?
+
+
+case "$scope" in
+    minimal)
+	contents=
+	while IFS=$'\n' read -r line
+	do
+	    case "$line" in
+		Property\ changes\ on:\ *)
+		    processContents "$contents"
+		    contents=$line # Start anew.
+		    ;;
+		Index:\ *)
+		    processContents "$contents"
+		    contents=$line # Start anew.
+		    ;;
+		*)
+		    contents="$contents
+$line"
+		    ;;
+	    esac
+	done < "$TMPFILE"
+
+	# Process the very last contents, too.
+	processContents "$contents"
+	;;
+
+    file)
+	contents=
+	file=
+	while IFS=$'\n' read -r line
+	do
+	    case "$line" in
+		Index:\ *)
+		    processContents "$contents"
+
+		    contents=$line # Start anew.
+		    file=${line#Index: }
+		    ;;
+		Property\ changes\ on:\ *)
+		    if [ "$file" = "${line#Property changes on: }" ]; then
+			# Still belongs to the same file.
+			contents="$contents
+$line"
+		    else
+			processContents "$contents"
+
+			contents=$line # Start anew.
+			file=${line#Property changes on: }
+		    fi
+		    ;;
+		*)
+		    contents="$contents
+$line"
+		    ;;
+	    esac
+	done < "$TMPFILE"
+
+	# Process the very last contents, too.
+	processContents "$contents"
+	;;
+
+    diff)
+	if grep --quiet '^Property changes on: ' "$TMPFILE"; then
+	    if [ "$isShow" ]; then
+		cat "$TMPFILE"
+	    fi
+	else
+	    if [ ! "$isShow" ]; then
+		cat "$TMPFILE"
+	    fi
+	fi
+	;;
+
+    *)
+	echo >&2 "ERROR: Invalid scope."
+	printUsage "$0"
+	exit 2
+	;;
+esac | if [ "$hasColorDiff" ]; then colordiff; else cat; fi | less --quit-on-intr --RAW-CONTROL-CHARS
