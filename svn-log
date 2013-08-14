@@ -126,8 +126,7 @@ grepFilter()
     revisionLog=
 
     revision=
-    while IFS='
-' read -r line
+    while IFS=$'\n' read -r line
     do
 	case "$line" in
 	    revision\ r+([0-9]))
@@ -153,8 +152,7 @@ $line"
 }
 limitFilter()
 {
-    while IFS='
-' read -r line
+    while IFS=$'\n' read -r line
     do
 	case "$line" in
 	    revision\ r+([0-9]))
