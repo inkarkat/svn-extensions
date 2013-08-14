@@ -3,22 +3,17 @@
 printUsage()
 {
     cat <<HELPTEXT
-Filter the (so far uncolored) svn diff output to only / not show property
-changes, or to completely suppress the output when a property has [not] changed.
+Filter the (uncolored) svn diff output to only / not show property changes, or
+to completely suppress the output when a property has [not] changed.
 --show		Output the scope when there's a property change.
 --hide		Do not output the scope when there's a property change.
 --scope minimal	Apply to property changes vs. actual file changes.
 --scope file	Apply within a single file change.
 --scope diff	Apply globally for the entire diff.
---no-color	Turn off colored diff.
 By default, shows only property changes: --show --scope minimal
-Usage: svn diff ... | "$(basename "$1")" [--show|--hide] [--scope=minimal|file|diff] [--no-color] [-?|-h|--help]
+Usage: svn diff ... | "$(basename "$1")" [--show|--hide] [--scope=minimal|file|diff] [-?|-h|--help]
 HELPTEXT
 }
-
-# Highlight diff output if available.
-hasColorDiff=
-which colordiff >/dev/null 2>&1 && hasColorDiff=t
 
 isShow=t
 scope=minimal
@@ -29,9 +24,8 @@ do
 	--show)		shift; isShow=t;;
 	--hide)		shift; isShow=;;
 	--scope)	shift; scope="$1"; shift;;
-	--no-color)	shift; hasColorDiff=;;
 	--)		shift; break;;
-	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printShortUsage "$0"; } >&2; exit 2;;
 	*)		break;;
     esac
 done
@@ -140,4 +134,4 @@ $line"
 	printUsage "$0"
 	exit 2
 	;;
-esac | if [ "$hasColorDiff" ]; then colordiff; else cat; fi | less --quit-on-intr --RAW-CONTROL-CHARS
+esac
