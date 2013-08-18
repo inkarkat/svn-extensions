@@ -1,0 +1,18 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show the current branch / tag of the repository.
+Usage: "$(basename "$1")" [-?|-h|--help] [PATH...]
+HELPTEXT
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+set -o pipefail
+url=$(svn info --non-interactive "$(svn-root "$@")" | sed -ne 's/^URL: //p') || exit $?
+rootUrl=$(svn info --non-interactive "$@" | sed -ne 's/^Repository Root: //p') || exit $?
+branch=${url#"${rootUrl%/}/"}
+printf '%s\n' "$branch"
