@@ -1,0 +1,19 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show last commit info of my last commit in the repository.
+-v		Include a list of changed files.
+--grep regexp   Limit the commits to ones with log message that matches the
+		specified pattern.
+--no-merge	Exclude any commits that mention merge in the revision summary.
+--no-color	Turn off color highlighting.
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [--no-color] [PATH...] [-?|-h|--help]
+HELPTEXT
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+svn-wrapper last --author "${SVNUSER:-$USER}" "$@"
