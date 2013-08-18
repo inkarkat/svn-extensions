@@ -194,6 +194,7 @@ typeset grepFilter=cat
 typeset colorize=colorize
 typeset grepArgs=
 typeset grepOptions=
+typeset isXmlOutput=
 case "$GREP_OPTIONS" in
     # The user prefers highlighting of grep matches; enable this in here, too,
     # even though our grep is in a pipe.
@@ -214,6 +215,7 @@ do
 	--grep)		shift; grepFilter='grepFilter'; grepArgs=$1; shift;;
 	--author)	shift; grepFilter='grepFilter'; authorArgs=$1; shift;;
 	--server)	shift; isServerRevisions='true';;
+	--xml)		isXmlOutput=t; allargs+=("$1");  shift;;
 	*)
 	    allargs+=("$1")
 	    shift
@@ -234,6 +236,14 @@ if [ "$limit" ]; then
 fi
 
 set -o pipefail
+if [ "$isXmlOutput" ]; then
+    # Shortcut for XML output: We don't need (and support) the full processing
+    # then.
+    [ "$mergeFilter" = 'cat' -a "$grepFilter" = 'cat' ] || echo >&2 "Warning: filtering is not supported with XML output."
+
+    svn log --non-interactive "${allargs[@]}" | less --RAW-CONTROL-CHARS
+    exit $?
+fi
 svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pipe') | sed --unbuffered -e '
 /^r[0-9]\+/{
     # Expand revision info into multi-line header.
