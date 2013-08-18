@@ -3,14 +3,14 @@
 printUsage()
 {
     cat <<HELPTEXT
-Verbose log messages of my commits. 
-Like "svn log" filtered for my personal commits. 
--v		Include a list of changed files. 
+Verbose log messages of my commits.
+Like "svn log" filtered for my personal commits.
+-v		Include a list of changed files.
 --grep regexp   Limit the commits to ones with log message that matches the
-		specified pattern. 
---no-merge	Exclude any commits that mention merge in the revision summary. 
+		specified pattern.
+--no-merge	Exclude any commits that mention merge in the revision summary.
 --server	Instead of local history, only list server revisions that you
-		don't have yet. 
+		don't have yet.
 Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
@@ -18,4 +18,4 @@ case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 
-exec svn-log --author "${SVNUSER:-$USERNAME}" "$@"
+exec svn-log --author "${SVNUSER:-$USER}" "$@"
