@@ -17,7 +17,6 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 		Limit to changes to properties matching REGEXP (e.g.
 		svn:mergeinfo); all other property names are ignored.
 #--no-merge	Exclude any commits that mention merge in the revision summary.
-		and non-recursive changes.
 --non-recursive	Only show changes to PATH itself, omit changes to contained
 		files / directories. Useful when you only want to see file
 		additions / removals or only property changes on the directory
@@ -25,9 +24,7 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 --no-color	Turn off color highlighting.
---no-diff	Do not actually show the diff, just the log. In contrast to svn
-		log, you can still use the superior filters for property changes
-Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff] [-?|-h|--help]
+Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -49,7 +46,7 @@ getRevisions()
     #fi
     if [ "$nonRecursivePaths" ]; then
 	# We need the file path information from the verbose log.
-	svnAdditionalArgs="${svnAdditionalArgs}${svnAdditionalArgs:+ }--verbose"
+	svnAdditionalArgs="${svnAdditionalArgs}${svnAdditionalArgs:+ }-v"
 
 	isFirst=t
 	for path in "${nonRecursivePaths[@]}"
@@ -88,7 +85,6 @@ propFilterPropertyNamePattern=
 revisionRangeArgs=
 serverRevisionsArgs=
 nonRecursivePaths=
-isNoDiff=
 typeset -a allargs=()
 typeset -a colorargs=()
 while [ $# -gt 0 ]
@@ -116,7 +112,6 @@ do
 			colorargs+=("$1")	# Do not pass this option to the default svn log; it doesn't understand it.
 			shift
 			;;
-	--no-diff)	shift; isNoDiff=t;;
 	*)
 	    allargs+=("$1")
 	    shift
@@ -143,13 +138,7 @@ getRevisions | while read revision
 do
     if [ "$propFilterMethod" ]; then
 	case "$propFilterMethod" in
-	    only)   filterArg=--show;
-		    if [ "$nonRecursivePaths" ]; then
-			filterScope=${propScope:-file}    # File scope when non-recursive.
-		    else
-			filterScope=${propScope:-diff}    # Else get the whole diff when there's a property change.
-		    fi
-		    ;;
+	    only)   filterArg=--show; filterScope=${propScope:-diff};;    # Get the whole diff when there's a property change.
 	    skip)   filterArg=--hide; filterScope=${propScope:-minimal};; # When there are only property changes, nothing will be returned.
 	    *)	    echo >&2 "ERROR: Invalid parameter for --props: $propFilterMethod"; printUsage "$0"; exit 2;;
 	esac
@@ -160,17 +149,14 @@ do
 	if [ "$diffContents" ]; then
 	    # Alright, we have a diff to show, now get the log entry first.
 	    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}"
-
 	    # Then show the diff contents.
-	    if [ ! "$isNoDiff" ]; then
-		isColorDiff=
-		[ ${#colorargs[@]} -eq 0 ] && type -t colordiff >/dev/null && isColorDiff=t
-		printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
-	    fi
+	    isColorDiff=
+	    [ ${#colorargs[@]} -eq 0 ] && type -t colordiff >/dev/null && isColorDiff=t
+	    printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
 	else
 	    showNoMatch "r${revision#r}"
 	fi
     else
-	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}" && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}" && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
     fi
 done | less --RAW-CONTROL-CHARS
