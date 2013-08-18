@@ -61,12 +61,14 @@ done
 if [ "$isServerRevisions" ]; then
     allargs+=($(svn-serverrevs))
 fi
-if [ "$limit" -a "$filter" = 'cat' -a ! "$authorArgs" ]; then
-    # When we do not need to do revision filtering, we can let svn log handle
-    # the limit itself.
-    allargs+=(--limit $limit)
-else
-    limitFilter="sed ${limit}q"
+if [ "$limit" ]; then
+    if [ "$filter" = 'cat' -a ! "$authorArgs" ]; then
+	# When we do not need to do revision filtering, we can let svn log handle
+	# the limit itself.
+	allargs+=(--limit $limit)
+    else
+	limitFilter="sed ${limit}q"
+    fi
 fi
 
 readonly today=$(date +%F)
