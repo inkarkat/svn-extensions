@@ -81,7 +81,6 @@ showNoMatch()
     [ "$1" ] && printf >&2 '%s\r' "${1} "
 }
 
-limit=
 isMergeFilter=
 authorArgs=
 grepArgs=
@@ -99,7 +98,7 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	-c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-	-l|--limit)	shift; limit=$1; shift;;
+	-l|--limit)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	#--no-merge)	shift; isMergeFilter=true;;
 	--grep)		shift; grepArgs=$1; shift;;
 	--author)	shift; authorArgs=$1; shift;;
@@ -139,26 +138,16 @@ if [ "$serverRevisionsArgs" ]; then
     # Only append the server repo URL here; the revision selection is done by the loop.
     allargs+=("${serverRevisionsArgs##* }")
 fi
-if [ "$limit" ]; then
-    if [ ! "$authorArgs" -a ! "$grepArgs" -a ! "$propFilterMethod" ]; then
-	# When we do not need to do revision filtering, we can let svn log handle
-	# the limit itself.
-	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }--limit '$limit'"
-	limit=
-    fi
-fi
 
 set -o pipefail
 if [ "$isNoDiff" -a ! "$propFilterMethod" ]; then
     # Optimization: It is noticeably faster (probably due to the network
     # handshaking with the Subversion server) to launch "svn log" with all
     # revisions instead of doing this separately for each revision.
-    [ "$limit" ] && limitArg="${limit}q" || limitArg=
-    getRevisions | sed -e 's/^/-c /' ${limitArg:+-e} ${limitArg} | xargs svn-wrapper log --incremental "${colorargs[@]}" "${allargs[@]}" | less --RAW-CONTROL-CHARS
+    getRevisions | sed 's/^/-c /' | xargs svn-wrapper log --incremental "${colorargs[@]}" "${allargs[@]}" | less --RAW-CONTROL-CHARS
     exit $?
 fi
 
-let revisionCnt=0
 getRevisions | while read revision
 do
     if [ "$propFilterMethod" ]; then
@@ -187,15 +176,10 @@ do
 		[ ${#colorargs[@]} -eq 0 ] && type -t colordiff >/dev/null && isColorDiff=t
 		printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
 	    fi
-
-	    let revisionCnt+=1
 	else
 	    showNoMatch "r${revision#r}"
 	fi
     else
 	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}" && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
-	let revisionCnt+=1
     fi
-
-    [ "$limit" ] && [ $revisionCnt -ge $limit ] && break
 done | less --RAW-CONTROL-CHARS
