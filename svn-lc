@@ -130,7 +130,7 @@ if [ "$nonRecursivePaths" ]; then
 	[ -e "$arg" ] && paths+=("$arg")
     done
 
-    nonRecursivePaths=$(svn-pathname --server "${paths[@]}") || exit $?
+    nonRecursivePaths=$(svn-pathname "${paths[@]}") || exit $?
 fi
 if [ "$serverRevisionsArgs" ]; then
     # Only append the server repo URL here; the revision selection is done by the loop.
