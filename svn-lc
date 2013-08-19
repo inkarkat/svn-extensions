@@ -5,21 +5,36 @@ printUsage()
     cat <<HELPTEXT
 Show logs together with diff between commits.
 Note: If you supply -c|--change REV, you can just as well use "svn show REV".
+-v		Include a list of changed files.
 --grep REGEXP   Limit the commits to ones with log message that matches the
 		specified pattern.
 --author REGEXP	Limit to commits by author.
 --prop only	Limit to commits that change properties.
 --prop skip	Skip commits that only change properties.
+--prop-scope minimal|file|diff
+		Override which part of the diff gets output when limiting to
+		property changes.
+--prop-filter REGEXP
+		Limit to changes to properties matching REGEXP (e.g.
+		svn:mergeinfo); all other property names are ignored.
 #--no-merge	Exclude any commits that mention merge in the revision summary.
+		and non-recursive changes.
+--non-recursive	Only show changes to PATH itself, omit changes to contained
+		files / directories. Useful when you only want to see file
+		additions / removals or only property changes on the directory
+		itself.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 --no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip] [-r|--revision ARG] [-l|--limit ARG] [--server|PATH] [-?|-h|--help]
+--no-diff	Do not actually show the diff, just the log. In contrast to svn
+		log, you can still use the superior filters for property changes
+Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff] [-?|-h|--help]
 HELPTEXT
 }
 
 getRevisions()
 {
+    typeset svnAdditionalArgs=
     typeset xmlFilter=
     if [ "$authorArgs" ]; then
 	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'contains(author,\"${authorArgs}\")'"
@@ -33,12 +48,25 @@ getRevisions()
     #if [ "$isMergeFilter" ]; then
     #	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'matches(msg,\"[Mm]erg\\(e\\|ed\\|es\\|ing\\)\\b\")'"
     #fi
+    if [ "$nonRecursivePaths" ]; then
+	# We need the file path information from the verbose log.
+	svnAdditionalArgs="${svnAdditionalArgs}${svnAdditionalArgs:+ }--verbose"
 
-    if [ "$xmlFilter" ]; then
-	(eval "svn log --non-interactive --xml $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
-    else
-	(eval "svn log --non-interactive --xml --with-no-revprops $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n
+	isFirst=t
+	for path in "${nonRecursivePaths[@]}"
+	do
+	    if [ "$isFirst" ]; then
+		isFirst=
+		xmlFilter="${xmlFilter}${xmlFilter:+ }-i './/path = \"${path}\""
+	    else
+		xmlFilter="${xmlFilter} or .//path = \"${path}\""
+	    fi
+	done
+	xmlFilter="${xmlFilter}'"
     fi
+
+    [ "$xmlFilter" ] && svnLogArgs=--with-no-revprops || svnLogArgs=
+    (eval 'svn log --non-interactive --xml' "$svnLogArgs $svnAdditionalArgs $revisionRangeArgs" '"${allargs[@]}"' || echo '</log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
 }
 
 showNoMatch()
@@ -50,25 +78,40 @@ showNoMatch()
     [ "$1" ] && printf >&2 '%s\r' "${1} "
 }
 
+filterRecursivePaths()
+{
+    svn-filefilter --non-recursive "$(svn-pathname "${paths[@]}")"
+}
+
+limit=
 isMergeFilter=
 authorArgs=
 grepArgs=
 propFilterMethod=
+propFilterPropertyNamePattern=
 revisionRangeArgs=
 serverRevisionsArgs=
+nonRecursivePaths=
+nonRecursivePathsFilter=cat
+isNoDiff=
 typeset -a allargs=()
+typeset -a verboseArgs=()
 typeset -a colorargs=()
 while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--verbose|-v)	verboseArgs+=("$1"); shift;; # Do not pass this option to svn diff; it doesn't understand it.
 	-c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-	-l|--limit)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+	-l|--limit)	shift; limit=$1; shift;;
 	#--no-merge)	shift; isMergeFilter=true;;
 	--grep)		shift; grepArgs=$1; shift;;
 	--author)	shift; authorArgs=$1; shift;;
 	--prop)		shift; propFilterMethod="$1"; shift;;
+	--prop-scope)	shift; propScope="$1"; shift;;
+	--prop-filter)	shift; propFilterPropertyNamePattern="$1"; shift;;
+	--non-recursive)    shift; nonRecursivePaths=t;;
 	--server)	shift
 			serverRevisionsArgs=$(svn-serverrevs)
 			# Only add the revision filter for getRevisions() here,
@@ -76,44 +119,91 @@ do
 			# commands.
 			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
 			;;
-	--no-color)
-			colorargs+=("$1")	# Do not pass this option to the default svn log; it doesn't understand it.
-			shift
-			;;
+	--no-color)	colorargs+=("$1"); shift;;	# Do not pass this option to the default svn log; it doesn't understand it.
+	--no-diff)	shift; isNoDiff=t;;
 	*)
 	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
+if [ "$nonRecursivePaths" ]; then
+    # Resolve the remaining arguments to repository paths.
+    typeset -a paths=()
+    for arg in "${allargs[@]}"
+    do
+	[ -e "$arg" ] && paths+=("$arg")
+    done
+
+    # Note: "svn log" only supports a single working copy PATH; let's hope we've
+    # found at least one. If there are many, Subversion will complain ("svn:
+    # When specifying working copy paths, only one target may be given"), so we
+    # can be sloppy with capturing into a scalar variable here.
+    nonRecursivePaths=$(svn-pathname --server "${paths[@]}") || exit $?
+
+    [ "$nonRecursivePaths" ] && nonRecursivePathsFilter=filterRecursivePaths
+fi
 if [ "$serverRevisionsArgs" ]; then
     # Only append the server repo URL here; the revision selection is done by the loop.
     allargs+=("${serverRevisionsArgs##* }")
 fi
+if [ "$limit" ]; then
+    if [ ! "$authorArgs" -a ! "$grepArgs" -a ! "$propFilterMethod" ]; then
+	# When we do not need to do revision filtering, we can let svn log handle
+	# the limit itself.
+	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }--limit '$limit'"
+	limit=
+    fi
+fi
 
 set -o pipefail
-getRevisions | while read revision
+if [ "$isNoDiff" -a ! "$propFilterMethod" ]; then
+    # Optimization: It is noticeably faster (probably due to the network
+    # handshaking with the Subversion server) to launch "svn log" with all
+    # revisions instead of doing this separately for each revision.
+    [ "$limit" ] && limitArg="${limit}q" || limitArg=
+    getRevisions | sed -e 's/^/-c /' ${limitArg:+-e} ${limitArg} | xargs --no-run-if-empty svn-wrapper log --incremental "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}" | $nonRecursivePathsFilter | less --RAW-CONTROL-CHARS
+    exit $?
+fi
+
+let revisionCnt=0
+getRevisions | { while read revision
 do
     if [ "$propFilterMethod" ]; then
 	case "$propFilterMethod" in
-	    only)   filterArg=--show; filterScope=diff;;    # Get the whole diff when there's a property change.
-	    skip)   filterArg=--hide; filterScope=minimal;; # When there are only property changes, nothing will be returned.
+	    only)   filterArg=--show;
+		    if [ "$nonRecursivePaths" ]; then
+			filterScope=${propScope:-file}    # File scope when non-recursive.
+		    else
+			filterScope=${propScope:-diff}    # Else get the whole diff when there's a property change.
+		    fi
+		    ;;
+	    skip)   filterArg=--hide; filterScope=${propScope:-minimal};; # When there are only property changes, nothing will be returned.
 	    *)	    echo >&2 "ERROR: Invalid parameter for --props: $propFilterMethod"; printUsage "$0"; exit 2;;
 	esac
+	[ "$propFilterPropertyNamePattern" ] && typeset -a propFilterArg=('--filter' "$propFilterPropertyNamePattern") || typeset -a propFilterArg=()
 
-	diffContents=$(svn-dp --no-color --change "$revision" | svn-propfilter --no-color $filterArg --scope $filterScope)
+	diffContents=$(svn-dp --no-color --change "$revision" | svn-propfilter --no-color $filterArg --scope $filterScope "${propFilterArg[@]}")
 
 	if [ "$diffContents" ]; then
 	    # Alright, we have a diff to show, now get the log entry first.
-	    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}"
+
 	    # Then show the diff contents.
-	    isColorDiff=
-	    [ ${#colorargs[@]} -eq 0 ] && type -t colordiff >/dev/null && isColorDiff=t
-	    printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
+	    if [ ! "$isNoDiff" ]; then
+		isColorDiff=
+		[ ${#colorargs[@]} -eq 0 ] && type -t colordiff >/dev/null && isColorDiff=t
+		printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
+	    fi
+
+	    let revisionCnt+=1
 	else
 	    showNoMatch "r${revision#r}"
 	fi
     else
-	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}" && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}" && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	let revisionCnt+=1
     fi
-done | less --RAW-CONTROL-CHARS
+
+    [ "$limit" ] && [ $revisionCnt -ge $limit ] && break
+done; [ "$revisionCnt" -gt 0 ]; } | $nonRecursivePathsFilter | less --RAW-CONTROL-CHARS
