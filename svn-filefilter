@@ -9,25 +9,18 @@ printUsage()
     cat <<HELPTEXT
 Filter to grey out / ... files outside PATH / the CWD from the svn verbose log
 and to transform diffs and property changes outside PATH to one-line summaries.
-PATH is taken literally (no regular expression) and must match whole path
-fragments from the beginning.
-With --non-recursive, PATH must match exactly; i.e. files below PATH are
-filtered.
 --no-color	Turn off coloring.
-Usage: svn lc ... | "$(basename "$1")" [--non-recursive] [--no-color] [PATH...] [-?|-h|--help]
+Usage: svn lc ... | "$(basename "$1")" [--no-color] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
 : ${COLOR_OMITTED:='[37m'}
 : ${COLOR_RESET:='[0m'}
 isColor=t
-isNonRecursive=
-endSeparator=/
 while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--non-recursive)    shift; isNonRecursive=t; endSeparator=///;;
 	--no-color)	shift; isColor=
 			# And clear all colors used here.
 			for color in ${!COLOR_@}; do
@@ -51,19 +44,12 @@ do
     fi
 
     if [ "$path" = '.' ]; then
-	if [ ! "$isNonRecursive" ]; then
-	    # When we're at the top of the local repository, that means nothing gets
-	    # filtered.
-	    pathGrepArgs=(-e '.*')
-	else
-	    # Except when --non-recursive has been specified. Then, the
-	    # repository-local file path is ".", and the log path is the branch
-	    # name.
-	    pathGrepArgs=(-F -e ".${endSeparator}" -e "$(svn-branchname)${endSeparator}")
-	fi
+	# When we're at the top of the local repository, that means nothing gets
+	# filtered.
+	pathGrepArgs=(-e '.*')
 	break
     else
-	pathGrepArgs+=(-e "${path%${endSeparator}}${endSeparator}")
+	pathGrepArgs+=(-e "${path%/}/")
     fi
 done
 
@@ -85,7 +71,7 @@ processLog()
 	    *( )+([ADMR])+( )/*)
 		path=${uncoloredLogline#*( )+([ADMR])+( )/}
 		path=${path% (from *)}
-		if printf %s%s "$path" "$endSeparator" | grep --quiet "${pathGrepArgs[@]}"; then
+		if printf %s "$path" | grep --quiet "${pathGrepArgs[@]}"; then
 		    printf '%s\n' "$logline"
 		elif [ "$isColor" ]; then
 		    printf '%s\n' "${COLOR_OMITTED}${uncoloredLogline}${COLOR_RESET}"
@@ -102,7 +88,7 @@ processContents()
 {
     [ "$2" ] || return
 
-    if printf %s%s "$1" "$endSeparator" | grep --quiet "${pathGrepArgs[@]}"; then
+    if printf %s "$1" | grep --quiet "${pathGrepArgs[@]}"; then
 	printf '%s\n' "$2"
     else
 	omitted=$(uncolor "${2%%$'\n'*}")
