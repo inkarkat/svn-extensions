@@ -21,7 +21,7 @@ getRevisions()
 
 getPath()
 {
-    repositoryUrl=$(svn info --non-interactive "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p') || return $?
+    repositoryUrl=$(svn-url "$@") || return $?
     printf %s "${repositoryUrl#"${repositoryRoot}"}"
 }
 
