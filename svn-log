@@ -5,16 +5,19 @@ shopt -qs extglob 2>/dev/null
 printUsage()
 {
     cat <<HELPTEXT
-Verbose log messages.
+Detailed log messages.
 -v		Include a list of changed files.
---grep regexp   Limit the commits to ones with log message that matches the
+--grep REGEXP   Limit the commits to ones with log message that matches the
 		specified pattern.
---author regexp	Limit to commits by author.
+--author REGEXP	Limit to commits by author.
 --no-merge	Exclude any commits that mention merge in the revision summary.
---no-color	Turn off color highlighting.
+#--non-recursive
+		Only show changes to PATH itself, omit changes to contained
+		files / directories. Supported through "svn lc".
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [--author regexp] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
+--no-color	Turn off color highlighting.
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [--no-color] [-?|-h|--help]
 HELPTEXT
 }
 
