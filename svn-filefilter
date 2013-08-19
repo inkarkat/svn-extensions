@@ -9,34 +9,24 @@ printUsage()
     cat <<HELPTEXT
 Filter to grey out / ... files outside PATH / the CWD from the svn verbose log
 and to transform diffs and property changes outside PATH to one-line summaries.
-Unless -e is given, PATH is taken literally (no regular expression) and must
-match whole path fragments from the beginning.
-With -e, all PATHs are interpreted as unanchored regular expressions.
-With --non-recursive, PATH must match exactly; i.e. files below PATH are
-filtered.
 --no-color	Turn off coloring.
-Usage: svn lc ... | "$(basename "$1")" [--non-recursive] [--no-color] [-e] [PATH...] [-?|-h|--help]
+Usage: svn lc ... | "$(basename "$1")" [--no-color] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
 : ${COLOR_OMITTED:='[37m'}
 : ${COLOR_RESET:='[0m'}
 isColor=t
-isNonRecursive=
-endSeparator=/
-typeset -a pathGrepArgs=(-F)
 while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--non-recursive)    shift; isNonRecursive=t; endSeparator=///;;
 	--no-color)	shift; isColor=
 			# And clear all colors used here.
 			for color in ${!COLOR_@}; do
 			    unset $color
 			done
 			;;
-	-e)		shift; pathGrepArgs=(); endSeparator=;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -45,53 +35,28 @@ done
 
 [ $# -eq 0 ] && set -- "$(svn-pathname)"
 
+typeset -a pathGrepArgs=(-F)
 for path
 do
-    # Transform into local repository path first.
-    if [ "$path" = '.' ]; then
-	path=$(svn-pathname)
-    fi
-
-    if [ "$path" = '.' ]; then
-	if [ ! "$isNonRecursive" ]; then
-	    # When we're at the top of the local repository, that means nothing gets
-	    # filtered.
-	    pathGrepArgs=(-e '.*')
-	else
-	    # Except when --non-recursive has been specified. Then, the
-	    # repository-local file path is ".", and the log path is the branch
-	    # name. We add both as alternatives instead of defining two
-	    # variables.
-	    pathGrepArgs=(-F -e ".${endSeparator}" -e "$(svn-branchname)${endSeparator}")
-	fi
-	break
-    else
-	pathGrepArgs+=(-e "${path%${endSeparator}}${endSeparator}")
-    fi
+    pathGrepArgs+=(-e "${path%/}/")
 done
 
 
-uncolor()
-{
-    eval "$1=\"\${2//\\[+([0-9;])[mK]/}\""
-}
 
 processLog()
 {
     [ "$1" ] || return
     local logline
-    local uncoloredLogline
     while IFS=$'\n' read -r logline
     do
-	uncolor uncoloredLogline "$logline"
-	case "$uncoloredLogline" in
+	case "$logline" in
 	    *( )+([ADMR])+( )/*)
-		path=${uncoloredLogline#*( )+([ADMR])+( )/}
+		path=${logline#*( )+([ADMR])+( )/}
 		path=${path% (from *)}
-		if printf %s%s "$path" "$endSeparator" | grep --quiet "${pathGrepArgs[@]}"; then
+		if printf %s "$path" | grep --quiet "${pathGrepArgs[@]}"; then
 		    printf '%s\n' "$logline"
 		elif [ "$isColor" ]; then
-		    printf '%s\n' "${COLOR_OMITTED}${uncoloredLogline}${COLOR_RESET}"
+		    printf '%s\n' "${COLOR_OMITTED}${logline}${COLOR_RESET}"
 		else
 		    printf '   ...\n'
 		fi
@@ -105,11 +70,10 @@ processContents()
 {
     [ "$2" ] || return
 
-    if printf %s%s "$1" "$endSeparator" | grep --quiet "${pathGrepArgs[@]}"; then
+    if printf %s "$1" | grep --quiet "${pathGrepArgs[@]}"; then
 	printf '%s\n' "$2"
     else
-	uncolor omitted "${2%%$'\n'*}
-"
+	omitted=${2%%$'\n'*}
 	printf '%s\n' "${COLOR_OMITTED}Omitted: ${omitted#Index: }${COLOR_RESET}"
     fi
 }
@@ -128,11 +92,9 @@ chunkify()
     local contents=
     local file=
     local line
-    local uncoloredLine
     while IFS=$'\n' read -r line
     do
-	uncolor uncoloredLine "$line"
-	case "$uncoloredLine" in
+	case "$line" in
 	    revision\ *)
 		process "$file" "$contents"
 
@@ -143,10 +105,10 @@ chunkify()
 		process "$file" "$contents"
 
 		contents=$line # Start anew.
-		file=${uncoloredLine#Index: }
+		file=${line#Index: }
 		;;
 	    Property\ changes\ on:\ *)
-		if [ "$file" = "${uncoloredLine#Property changes on: }" ]; then
+		if [ "$file" = "${line#Property changes on: }" ]; then
 		    # Still belongs to the same file.
 		    contents="$contents
 $line"
@@ -154,12 +116,12 @@ $line"
 		    process "$file" "$contents"
 
 		    contents=$line # Start anew.
-		    file=${uncoloredLine#Property changes on: }
+		    file=${line#Property changes on: }
 		fi
 		;;
 	    *)
-		contents="${contents}${contents:+
-}$line"
+		contents="$contents
+$line"
 	    ;;
 	esac
     done
