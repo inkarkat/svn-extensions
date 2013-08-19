@@ -9,13 +9,12 @@ printUsage()
     cat <<HELPTEXT
 Filter to grey out / ... files outside PATH / the CWD from the svn verbose log
 and to transform diffs and property changes outside PATH to one-line summaries.
-Unless -e is given, PATH is taken literally (no regular expression) and must
-match whole path fragments from the beginning.
-With -e, all PATHs are interpreted as unanchored regular expressions.
+PATH is taken literally (no regular expression) and must match whole path
+fragments from the beginning.
 With --non-recursive, PATH must match exactly; i.e. files below PATH are
 filtered.
 --no-color	Turn off coloring.
-Usage: svn lc ... | "$(basename "$1")" [--non-recursive] [--no-color] [-e] [PATH...] [-?|-h|--help]
+Usage: svn lc ... | "$(basename "$1")" [--non-recursive] [--no-color] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -24,7 +23,6 @@ HELPTEXT
 isColor=t
 isNonRecursive=
 endSeparator=/
-typeset -a pathGrepArgs=(-F)
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -36,7 +34,6 @@ do
 			    unset $color
 			done
 			;;
-	-e)		shift; pathGrepArgs=(); endSeparator=;;
 	--)		shift; break;;
 	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
 	*)		break;;
@@ -45,6 +42,7 @@ done
 
 [ $# -eq 0 ] && set -- "$(svn-pathname)"
 
+typeset -a pathGrepArgs=(-F)
 for path
 do
     # Transform into local repository path first.
@@ -60,8 +58,7 @@ do
 	else
 	    # Except when --non-recursive has been specified. Then, the
 	    # repository-local file path is ".", and the log path is the branch
-	    # name. We add both as alternatives instead of defining two
-	    # variables.
+	    # name.
 	    pathGrepArgs=(-F -e ".${endSeparator}" -e "$(svn-branchname)${endSeparator}")
 	fi
 	break
