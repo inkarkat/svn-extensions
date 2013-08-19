@@ -273,6 +273,9 @@ svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pip
 # At the end of the revision log, print the changed file list (in case of "svn
 # log -v").
 /^-\+$/{ g; b }
+# Note: With --incremental (used by "svn-lc"), there is no trailing separator
+# line.
+${ g; b }
 
 # Indent revision message.
 s/^/    /
