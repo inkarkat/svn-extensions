@@ -65,8 +65,11 @@ getRevisions()
 	xmlFilter="${xmlFilter}'"
     fi
 
-    [ "$xmlFilter" ] && svnLogArgs=--with-no-revprops || svnLogArgs=
-    (eval 'svn log --non-interactive --xml' "$svnLogArgs $svnAdditionalArgs $revisionRangeArgs" '"${allargs[@]}"' || echo '</log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
+    if [ "$xmlFilter" ]; then
+	(eval "svn log --non-interactive --xml                    $svnAdditionalArgs $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
+    else
+	(eval "svn log --non-interactive --xml --with-no-revprops $svnAdditionalArgs $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n
+    fi
 }
 
 showNoMatch()
@@ -78,11 +81,6 @@ showNoMatch()
     [ "$1" ] && printf >&2 '%s\r' "${1} "
 }
 
-filterRecursivePaths()
-{
-    svn-filefilter --non-recursive "$(svn-pathname "${paths[@]}")"
-}
-
 limit=
 isMergeFilter=
 authorArgs=
@@ -92,16 +90,13 @@ propFilterPropertyNamePattern=
 revisionRangeArgs=
 serverRevisionsArgs=
 nonRecursivePaths=
-nonRecursivePathsFilter=cat
 isNoDiff=
 typeset -a allargs=()
-typeset -a verboseArgs=()
 typeset -a colorargs=()
 while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--verbose|-v)	verboseArgs+=("$1"); shift;; # Do not pass this option to svn diff; it doesn't understand it.
 	-c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-l|--limit)	shift; limit=$1; shift;;
@@ -119,7 +114,10 @@ do
 			# commands.
 			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
 			;;
-	--no-color)	colorargs+=("$1"); shift;;	# Do not pass this option to the default svn log; it doesn't understand it.
+	--no-color)
+			colorargs+=("$1")	# Do not pass this option to the default svn log; it doesn't understand it.
+			shift
+			;;
 	--no-diff)	shift; isNoDiff=t;;
 	*)
 	    allargs+=("$1")
@@ -135,13 +133,7 @@ if [ "$nonRecursivePaths" ]; then
 	[ -e "$arg" ] && paths+=("$arg")
     done
 
-    # Note: "svn log" only supports a single working copy PATH; let's hope we've
-    # found at least one. If there are many, Subversion will complain ("svn:
-    # When specifying working copy paths, only one target may be given"), so we
-    # can be sloppy with capturing into a scalar variable here.
-    nonRecursivePaths=$(svn-pathname --server "${paths[@]}") || exit $?
-
-    [ "$nonRecursivePaths" ] && nonRecursivePathsFilter=filterRecursivePaths
+    nonRecursivePaths=$(svn-pathname "${paths[@]}") || exit $?
 fi
 if [ "$serverRevisionsArgs" ]; then
     # Only append the server repo URL here; the revision selection is done by the loop.
@@ -162,12 +154,12 @@ if [ "$isNoDiff" -a ! "$propFilterMethod" ]; then
     # handshaking with the Subversion server) to launch "svn log" with all
     # revisions instead of doing this separately for each revision.
     [ "$limit" ] && limitArg="${limit}q" || limitArg=
-    getRevisions | sed -e 's/^/-c /' ${limitArg:+-e} ${limitArg} | xargs --no-run-if-empty svn-wrapper log --incremental "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}" | $nonRecursivePathsFilter | less --RAW-CONTROL-CHARS
+    getRevisions | sed -e 's/^/-c /' ${limitArg:+-e} ${limitArg} | xargs svn-wrapper log --incremental "${colorargs[@]}" "${allargs[@]}" | less --RAW-CONTROL-CHARS
     exit $?
 fi
 
 let revisionCnt=0
-getRevisions | { while read revision
+getRevisions | while read revision
 do
     if [ "$propFilterMethod" ]; then
 	case "$propFilterMethod" in
@@ -187,7 +179,7 @@ do
 
 	if [ "$diffContents" ]; then
 	    # Alright, we have a diff to show, now get the log entry first.
-	    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}"
+	    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}"
 
 	    # Then show the diff contents.
 	    if [ ! "$isNoDiff" ]; then
@@ -201,9 +193,9 @@ do
 	    showNoMatch "r${revision#r}"
 	fi
     else
-	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}" && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}" && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
 	let revisionCnt+=1
     fi
 
     [ "$limit" ] && [ $revisionCnt -ge $limit ] && break
-done; [ "$revisionCnt" -gt 0 ]; } | $nonRecursivePathsFilter | less --RAW-CONTROL-CHARS
+done | less --RAW-CONTROL-CHARS
