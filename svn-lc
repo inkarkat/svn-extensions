@@ -65,11 +65,8 @@ getRevisions()
 	xmlFilter="${xmlFilter}'"
     fi
 
-    if [ "$xmlFilter" ]; then
-	(eval "svn log --non-interactive --xml                    $svnAdditionalArgs $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
-    else
-	(eval "svn log --non-interactive --xml --with-no-revprops $svnAdditionalArgs $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n
-    fi
+    [ "$xmlFilter" ] && svnLogArgs=--with-no-revprops || svnLogArgs=
+    (eval 'svn log --non-interactive --xml' "$svnLogArgs $svnAdditionalArgs $revisionRangeArgs" '"${allargs[@]}"' || echo '</log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
 }
 
 showNoMatch()
@@ -81,6 +78,7 @@ showNoMatch()
     [ "$1" ] && printf >&2 '%s\r' "${1} "
 }
 
+limit=
 isMergeFilter=
 authorArgs=
 grepArgs=
@@ -91,14 +89,16 @@ serverRevisionsArgs=
 nonRecursivePaths=
 isNoDiff=
 typeset -a allargs=()
+typeset -a verboseArgs=()
 typeset -a colorargs=()
 while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--verbose|-v)	verboseArgs+=("$1"); shift;; # Do not pass this option to svn diff; it doesn't understand it.
 	-c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-	-l|--limit)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+	-l|--limit)	shift; limit=$1; shift;;
 	#--no-merge)	shift; isMergeFilter=true;;
 	--grep)		shift; grepArgs=$1; shift;;
 	--author)	shift; authorArgs=$1; shift;;
@@ -113,10 +113,7 @@ do
 			# commands.
 			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
 			;;
-	--no-color)
-			colorargs+=("$1")	# Do not pass this option to the default svn log; it doesn't understand it.
-			shift
-			;;
+	--no-color)	colorargs+=("$1"); shift;;	# Do not pass this option to the default svn log; it doesn't understand it.
 	--no-diff)	shift; isNoDiff=t;;
 	*)
 	    allargs+=("$1")
@@ -132,11 +129,19 @@ if [ "$nonRecursivePaths" ]; then
 	[ -e "$arg" ] && paths+=("$arg")
     done
 
-    nonRecursivePaths=$(svn-pathname "${paths[@]}") || exit $?
+    nonRecursivePaths=$(svn-pathname --server "${paths[@]}") || exit $?
 fi
 if [ "$serverRevisionsArgs" ]; then
     # Only append the server repo URL here; the revision selection is done by the loop.
     allargs+=("${serverRevisionsArgs##* }")
+fi
+if [ "$limit" ]; then
+    if [ ! "$authorArgs" -a ! "$grepArgs" -a ! "$propFilterMethod" ]; then
+	# When we do not need to do revision filtering, we can let svn log handle
+	# the limit itself.
+	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }--limit '$limit'"
+	limit=
+    fi
 fi
 
 set -o pipefail
@@ -144,11 +149,13 @@ if [ "$isNoDiff" -a ! "$propFilterMethod" ]; then
     # Optimization: It is noticeably faster (probably due to the network
     # handshaking with the Subversion server) to launch "svn log" with all
     # revisions instead of doing this separately for each revision.
-    getRevisions | sed 's/^/-c /' | xargs svn-wrapper log --incremental "${colorargs[@]}" "${allargs[@]}" | less --RAW-CONTROL-CHARS
+    [ "$limit" ] && limitArg="${limit}q" || limitArg=
+    getRevisions | sed -e 's/^/-c /' ${limitArg:+-e} ${limitArg} | xargs --no-run-if-empty svn-wrapper log --incremental "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}" | less --RAW-CONTROL-CHARS
     exit $?
 fi
 
-getRevisions | while read revision
+let revisionCnt=0
+getRevisions | { while read revision
 do
     if [ "$propFilterMethod" ]; then
 	case "$propFilterMethod" in
@@ -168,7 +175,7 @@ do
 
 	if [ "$diffContents" ]; then
 	    # Alright, we have a diff to show, now get the log entry first.
-	    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}"
 
 	    # Then show the diff contents.
 	    if [ ! "$isNoDiff" ]; then
@@ -176,10 +183,15 @@ do
 		[ ${#colorargs[@]} -eq 0 ] && type -t colordiff >/dev/null && isColorDiff=t
 		printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
 	    fi
+
+	    let revisionCnt+=1
 	else
 	    showNoMatch "r${revision#r}"
 	fi
     else
-	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}" && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}" && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	let revisionCnt+=1
     fi
-done | less --RAW-CONTROL-CHARS
+
+    [ "$limit" ] && [ $revisionCnt -ge $limit ] && break
+done; [ "$revisionCnt" -gt 0 ]; } | less --RAW-CONTROL-CHARS
