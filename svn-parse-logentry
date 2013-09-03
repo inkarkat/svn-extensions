@@ -42,7 +42,7 @@ function join(array, start, end,      result, i)
     }
 
     list["changes"][fileCnt] = $0
-    list["files"][fileCnt] = substr($0, 6)
+    list["paths"][fileCnt] = substr($0, 6)
     fileCnt += 1
     next
 }
