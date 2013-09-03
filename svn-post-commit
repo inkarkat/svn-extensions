@@ -3,6 +3,28 @@
 readonly passedRevision=${1:?}
 echo "**** post-commit hook for $passedRevision"
 
+getAdditionalInformation()
+{
+    readonly branchFullName=$(svn-branchname)
+    readonly branchName=${branchFullName##*/}
+
+    eval "$(svn info --non-interactive -r "$passedRevision" | svn-parse-info)"
+
+    readonly RepositoryName=${RepositoryRoot##*/}
+    nonDefaultRepository=
+    if [ "$RepositoryName" != "$repository" ]; then
+	nonDefaultRepository="${RepositoryName}'s "
+    fi
+
+    case "$repository" in
+	hpsw-opr)		defaultAffected=opr-web.war;;
+	hpsw-opr-config)	defaultAffected=opr-config-server.war;;
+	*)			defaultAffected=;;
+    esac
+
+    readonly fixedVersion=$(opr-version)
+}
+
 output()
 {
     if type -t clipboard >/dev/null; then
@@ -12,28 +34,22 @@ output()
     fi
 }
 
-eval "$(svn log -r "$passedRevision" | svn-parse-logentry)" || exit $?
+eval "$(svn log --non-interactive -v -r "$passedRevision" | svn-parse-logentry)" || exit $?
 
 case "$summary" in
+    Merge\ of\ QCCR*)
+	getAdditionalInformation
+
+	output <<EOF
+MODIFIED FILES (repository, branch and revision; per release):
+$revision on ${nonDefaultRepository}$branchName
+
+FIXED FOR VERSION:
+$fixedVersion
+EOF
+	;;
     *QCCR*)
-	readonly branchFullName=$(svn-branchname)
-	readonly branchName=${branchFullName##*/}
-
-	eval "$(svn info -r "$passedRevision" | svn-parse-info)"
-
-	readonly RepositoryName=${RepositoryRoot##*/}
-	nonDefaultRepository=
-	if [ "$RepositoryName" != "$repository" ]; then
-	    nonDefaultRepository="${RepositoryName}'s "
-	fi
-
-	case "$repository" in
-	    hpsw-opr)		defaultAffected=opr-web.war;;
-	    hpsw-opr-config)	defaultAffected=opr-config-server.war;;
-	    *)			defaultAffected=;;
-	esac
-
-	readonly fixedVersion=$(opr-version)
+	getAdditionalInformation
 
 	output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
@@ -51,6 +67,15 @@ DOCUMENTATION CHANGE:
 
 FIXED FOR VERSION:
 $fixedVersion
+EOF
+	;;
+    *)
+	readonly branchFullName=$(svn-branchname)
+	typeset -a files=("${paths[@]#/${branchFullName}/}")
+	readonly fileNum=${#files[@]}
+	[ $fileNum -eq 1 ] && readonly filePlural= || filePlural=s
+	output <<EOF
+Committed $fileNum file${filePlural} below $(commonpath "${files[@]}".
 EOF
 	;;
 esac
