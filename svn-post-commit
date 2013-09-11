@@ -22,7 +22,7 @@ getAdditionalInformation()
 	*)			defaultAffected=;;
     esac
 
-    readonly fixedVersion=$(opr-version)
+    readonly fixedVersion=$(opr-version --server -r "$passedRevision")
 }
 
 output()
@@ -38,6 +38,7 @@ eval "$(svn log --non-interactive -v -r "$passedRevision" | svn-parse-logentry)"
 
 case "$summary" in
     Merge\ of\ QCCR*)
+echo "**** Merge of QCCR"
 	getAdditionalInformation
 
 	output <<EOF
@@ -49,13 +50,14 @@ $fixedVersion
 EOF
 	;;
     *QCCR*)
+echo "**** QCCR"
 	getAdditionalInformation
 
-	output <<EOF
+	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
 
 SOLUTION:
-$description
+${description[*]}
 
 MODIFIED FILES (repository, branch and revision; per release):
 $revision on ${nonDefaultRepository}$branchName
@@ -70,6 +72,7 @@ $fixedVersion
 EOF
 	;;
     *)
+echo "**** no CR"
 	readonly branchFullName=$(svn-branchname)
 	typeset -a files=("${paths[@]#/${branchFullName}/}")
 	readonly fileNum=${#files[@]}
