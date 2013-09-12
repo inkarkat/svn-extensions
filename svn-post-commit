@@ -3,6 +3,10 @@
 readonly passedRevision=${1:?}
 echo "**** post-commit hook for $passedRevision"
 
+extractDefectId()
+{
+    defectId=$(printf %s "$summary" | sed -e 's/^.*\(QCCR[0-9A-Z]\+\).*$/\1/')
+}
 getAdditionalInformation()
 {
     readonly branchFullName=$(svn-branchname)
@@ -38,7 +42,8 @@ eval "$(svn log --non-interactive -v -r "$passedRevision" | svn-parse-logentry)"
 
 case "$summary" in
     Merge\ of\ QCCR*)
-echo "**** Merge of QCCR"
+	extractDefectId
+echo "**** Merge of $defectId"
 	getAdditionalInformation
 
 	output <<EOF
@@ -50,11 +55,13 @@ $fixedVersion
 EOF
 	;;
     *QCCR*)
-echo "**** QCCR"
+	extractDefectId
+echo "**** $defectId"
 	getAdditionalInformation
 
 	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
+[Missing|Faulty] implementation.
 
 SOLUTION:
 ${description[*]}
