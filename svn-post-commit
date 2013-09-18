@@ -29,6 +29,47 @@ getAdditionalInformation()
     readonly fixedVersion=$(opr-version --server -r "$passedRevision")
 }
 
+searchForPreviousMentions()
+{
+    revisions=$revision
+    typeset -a descriptions=$description
+    printf >&2 '\n**** Searching for previous mentions of %s in the summary...\n' "$1"
+    while read -r logLine
+    do
+	logRevision=${logLine%% *}
+	[ "${logRevision#r}" = "${revision#r}" ] && continue
+	echo "**** $logRevision"
+	eval "$(svn log --non-interactive -v -r "$logRevision" | svn-parse-logentry)"
+	revisions="${logRevision}, $revisions"
+	descriptions=("${description[@]}" "" "${descriptions[@]}")
+	IFS=$'\n' cat <<EOF
+SOLUTION:
+${description[*]}
+
+EOF
+    done < <((svn-lg --no-color --server; svn-lg --no-color) | GREP_OPTIONS= grep -F "$1")
+
+    echo "**** combined $defectId"
+    IFS=$'\n' output <<EOF
+TECHNICAL PROBLEM DESCRIPTION:
+[Missing|Faulty] implementation.
+
+SOLUTION:
+${descriptions[*]}
+
+MODIFIED FILES (repository, branch and revision; per release):
+$revisions on ${nonDefaultRepository}$branchName
+
+AFFECTED PROGRAMS/SCRIPTS/LIBRARIES:
+$defaultAffected
+
+DOCUMENTATION CHANGE:
+
+FIXED FOR VERSION:
+$fixedVersion
+EOF
+}
+
 output()
 {
     if type -t clipboard >/dev/null; then
@@ -77,6 +118,7 @@ DOCUMENTATION CHANGE:
 FIXED FOR VERSION:
 $fixedVersion
 EOF
+	searchForPreviousMentions "$defectId"
 	;;
     *)
 echo "**** This is no CR."
