@@ -31,6 +31,7 @@ getAdditionalInformation()
 
 searchForPreviousMentions()
 {
+    hasPreviousMentions=
     revisions=$revision
     typeset -a descriptions=$description
     printf >&2 '\n**** Searching for previous mentions of %s in the summary...\n' "$1"
@@ -39,6 +40,7 @@ searchForPreviousMentions()
 	logRevision=${logLine%% *}
 	[ "${logRevision#r}" = "${revision#r}" ] && continue
 	echo "**** $logRevision"
+	hasPreviousMentions=t
 	eval "$(svn log --non-interactive -v -r "$logRevision" | svn-parse-logentry)"
 	revisions="${logRevision}, $revisions"
 	descriptions=("${description[@]}" "" "${descriptions[@]}")
@@ -49,8 +51,9 @@ ${description[*]}
 EOF
     done < <((svn-lg --no-color --server; svn-lg --no-color) | GREP_OPTIONS= grep -F "$1")
 
-    echo "**** combined $defectId"
-    IFS=$'\n' output <<EOF
+    if [ "$hasPreviousMentions" ]; then
+	echo "**** combined $defectId"
+	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
 [Missing|Faulty] implementation.
 
@@ -68,6 +71,9 @@ DOCUMENTATION CHANGE:
 FIXED FOR VERSION:
 $fixedVersion
 EOF
+    else
+	echo "**** none found."
+    fi
 }
 
 output()
