@@ -54,7 +54,8 @@ diffHandlingMoves()
     # processing, start the query at $revision and limit the log output to the
     # minimal 2 entries necessary: The log of $revision (containing the move
     # info), and the predecessor (containing the predecessor revision).
-    svn-renamed --non-interactive --revision "${revision}:1" --limit 2 "$@" | {
+    # Note: svn-renamed doesn't support the --no-color argument; filter it out.
+    svn-renamed --non-interactive --revision "${revision}:1" --limit 2 "${@//--no-color/}" | {
 	IFS=$'\t'
 	read -r currentRev currentPath
 	read -r previousRev previousPath
