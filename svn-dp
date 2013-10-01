@@ -18,7 +18,10 @@ HELPTEXT
 
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_RESET:='[0m'}
+isColor=t
 typeset -a allargs=()
+diffStatArgs=
+typeset -a statArgs=()
 typeset -a revisions=()
 while [ $# -gt 0 ]
 do
@@ -27,6 +30,7 @@ do
 	--no-color)
 			allargs+=("$1")	# Pass option along to my svn diff wrapper.
 			shift
+			isColor=
 			# And clear all colors used here.
 			for color in ${!COLOR_@}; do
 			    unset $color
@@ -35,12 +39,31 @@ do
 	--change|-c)	shift; revisions+=("$1"); shift;;
 	--revision|-r)	shift; revisions+=("$1"); shift;;
 	?(r)+([0-9]))	       revisions+=("${1#r}"); shift;;
+	--stat)
+	    statArgs+=("$1")
+	    allargs+=('--no-color')	# Pass option along to my svn diff wrapper.
+	    shift
+	    diffStatArgs='-C'
+	    ;;
+	--numstat)
+	    statArgs+=("$1")
+	    allargs+=('--no-color')	# Pass option along to my svn diff wrapper.
+	    shift
+	    diffStatArgs='-C -f0'
+	    ;;
+	--shortstat)
+	    statArgs+=("$1")
+	    allargs+=('--no-color')	# Pass option along to my svn diff wrapper.
+	    shift
+	    diffStatArgs='-C -s'
+	    ;;
 	*)
 	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
+[ "$isColor" ] || diffStatArgs=${diffStatArgs//-C/}
 
 diffHandlingMoves()
 {
@@ -67,15 +90,22 @@ diffHandlingMoves()
 
 set -o pipefail
 if [ ${#revisions[@]} -eq 0 ]; then
-    svn-wrapper diff -r PREV:COMMITTED "${allargs[@]}"
+    svn-wrapper diff -r PREV:COMMITTED "${statArgs[@]}" "${allargs[@]}"
 elif [ ${#revisions[@]} -eq 1 ]; then
-    diffHandlingMoves $revisions "${allargs[@]}"
+    diffHandlingMoves $revisions "${statArgs[@]}" "${allargs[@]}"
 else
-    typeset isFirstEntry='true'
+    typeset isFirstEntry=t
     for revision in "${revisions[@]}"
     do
-	[ "$isFirstEntry" ] && isFirstEntry= || echo
-	echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
+	if [ ${#statArgs} -eq 0 ]; then
+	    [ "$isFirstEntry" ] && isFirstEntry= || echo
+	    echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
+	fi
 	diffHandlingMoves $revision "${allargs[@]}"
-    done | less --quit-on-intr --RAW-CONTROL-CHARS
+    done | \
+	if [ ${#statArgs} -eq 0 ]; then
+	    less --quit-on-intr --RAW-CONTROL-CHARS
+	else
+	    diffstat $diffStatArgs | less --quit-on-intr --RAW-CONTROL-CHARS
+	fi
 fi
