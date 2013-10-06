@@ -114,7 +114,7 @@ echo "**** $defectId"
 
 	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
-[Missing|Faulty] implementation.
+[Requirement ill-considered|Technology weakness|Faulty design|Missing implementation|Faulty implementation|Oversight|Negligence].
 
 SOLUTION:
 ${description[*]}
