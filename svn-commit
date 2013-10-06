@@ -10,7 +10,7 @@ committedFile=
 svnCommit()
 {
     getCommittedFile "$@"
-echo "**** committed File: $committedFile"
+echo "**** a committed file: $committedFile"
     svn commit "$@" || exit $?
     getCommitRevision "$@"
 echo "**** committed revision: $revision"
