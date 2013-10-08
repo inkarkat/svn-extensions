@@ -16,7 +16,7 @@ echo "**** a committed file: $committedFile"
 echo "**** committed revision: $revision"
 
     if [ "$revision" ] && type -t svn-post-commit >/dev/null; then
-	svn-post-commit "$revision" "$@"
+	svn-post-commit "$revision" "$committedFile" "$@"
     fi
 }
 
