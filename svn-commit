@@ -9,7 +9,7 @@ revision=
 committedFile=
 svnCommit()
 {
-    getCommittedFile "$@"
+    getCommittedFile "$@" || exit $?
 echo "**** a committed file: $committedFile"
     svn commit "$@" || exit $?
     getCommitRevision "$@"
@@ -51,14 +51,14 @@ getCommittedFile()
 	committedFile=$lastArg
     else
 	# Get one commited file from the commit via svn status.
-	committedFile=$(svn status --non-interactive "$@" 2>/dev/null | sed -ne '/^[AMR].\{7\}\|^.M.\{6\}/{ s/^.\{8\}//p; q}')
+	committedFile=$(svn status --non-interactive "${commonArguments[@]}" | sed -ne '/^[AMR].\{7\}\|^.M.\{6\}/{ s/^.\{8\}//p; q}') || exit $?
     fi
 }
 
 getCommitRevision()
 {
     if [ ! "$committedFile" -o ! -e "$committedFile" ]; then
-	echo >&2 "Failed to determine a committed file; cannot run any post commit hook."
+	echo >&2 "Warning: Failed to determine a committed file; cannot run any post commit hook."
 	exit 1
     fi
 
