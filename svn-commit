@@ -9,7 +9,13 @@ revision=
 committedFile=
 svnCommit()
 {
-    getCommittedFile "$@" || exit $?
+    getCommittedFile "$@"
+    if [ ! "$committedFile" -o ! -e "$committedFile" ]; then
+	echo >&2 "ERROR: Could not find a file to commit; this is the status of the working copy:"
+	svn status --non-interactive "${commonArguments[@]}"
+	exit 1
+    fi
+
 echo "**** a committed file: $committedFile"
     svn commit "$@" || exit $?
     getCommitRevision "$@"
@@ -57,12 +63,7 @@ getCommittedFile()
 
 getCommitRevision()
 {
-    if [ ! "$committedFile" -o ! -e "$committedFile" ]; then
-	echo >&2 "Warning: Failed to determine a committed file; cannot run any post commit hook."
-	exit 1
-    fi
-
-    revision=$(svn info --non-interactive "$committedFile" | sed -ne 's/^Revision: //p') || return
+    revision=$(svn info --non-interactive "${committedFile:?}" | sed -ne 's/^Revision: //p') || return
 }
 
 
