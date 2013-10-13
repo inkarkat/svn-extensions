@@ -1,0 +1,35 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Save the full dirty working copy in a temporary patch (named NAME) and revert
+it.
+Usage: "$(basename "$1")" [-n|--name NAME] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
+HELPTEXT
+}
+
+typeset -a allargs=()
+typeset name="stash-$(date +%Y%m%d-%H%M%S)"
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--name|-n)	shift; name="$1"; shift;;
+	*)		allargs+=("$1")
+			shift
+			;;
+    esac
+done
+
+set -x
+rootdir=$(svn-root) || exit $?
+cd "$rootdir" || exit $?
+readonly stashDir='.svn/stashes'
+[ -d "$stashDir" ] || mkdir -p "$stashDir" || { echo >&2 'Failed to create stashes directory.'; exit $?; }
+[ -w "$stashDir" ] || { echo >&2 "Cannot write to stashes directory: ${PWD%/}/$stashDir"; exit 1; }
+
+readonly stashFilespec="${stashDir}/${name}.patch"
+svn-diff --no-color "${allargs[@]}" > "$stashFilespec" || exit $?
+diffstat -C "$stashFilespec"
+svn revert --recursive .
