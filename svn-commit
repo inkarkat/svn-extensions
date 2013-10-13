@@ -52,8 +52,9 @@ getCommittedFile()
 
     lastArg=
     [ ${#commonArguments[@]} -gt 0 ] && lastArg=${commonArguments[${#commonArguments[@]} - 1]}
-    if [ -e "$lastArg" ]; then
-	# Shortcut: The last argument is a file; use that.
+    if [ -e "$lastArg" -a ! -d "$lastArg" ]; then
+	# Shortcut: The last argument is an actual file (not just a base
+	# directory to search for modified files); use that.
 	committedFile=$lastArg
     else
 	# Get one commited file from the commit via svn status.
