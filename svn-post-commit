@@ -1,7 +1,13 @@
 #!/bin/bash
 
-readonly passedRevision=${1:?}
-#****D echo "**** post-commit hook for $passedRevision"
+set -o pipefail
+
+readonly passedRevision=${1:?}; shift
+readonly committedFile=$1; shift
+repoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Cannot determine the repository's root from $committedFile"
+#****D echo "**** post-commit hook for $passedRevision on $committedFile"
+
+
 
 extractDefectId()
 {
@@ -9,10 +15,10 @@ extractDefectId()
 }
 getAdditionalInformation()
 {
-    readonly branchFullName=$(svn-branchname)
+    readonly branchFullName=$(svn-branchname "$repoRoot")
     readonly branchName=${branchFullName##*/}
 
-    eval "$(svn info --non-interactive -r "$passedRevision" | svn-parse-info)"
+    eval "$(svn info --non-interactive -r "$passedRevision" "$repoRoot" | svn-parse-info)"
 
     readonly RepositoryName=${RepositoryRoot##*/}
     nonDefaultRepository=
@@ -26,7 +32,7 @@ getAdditionalInformation()
 	*)			defaultAffected=;;
     esac
 
-    readonly fixedVersion=$(opr-version --server -r "$passedRevision")
+    readonly fixedVersion=$(opr-version --server -r "$passedRevision" "$repoRoot")
 }
 
 searchForPreviousMentions()
@@ -41,7 +47,7 @@ searchForPreviousMentions()
 	[ "${logRevision#r}" = "${revision#r}" ] && continue
 	echo "**** $logRevision"
 	hasPreviousMentions=t
-	eval "$(svn log --non-interactive -v -r "$logRevision" | svn-parse-logentry)"
+	eval "$(svn log --non-interactive -v -r "$logRevision" "$repoRoot" | svn-parse-logentry)"
 	revisions="${logRevision}, $revisions"
 	descriptions=("${description[@]}" "" "${descriptions[@]}")
 	IFS=$'\n' cat <<EOF
@@ -49,7 +55,7 @@ SOLUTION:
 ${description[*]}
 
 EOF
-    done < <((svn-lg --no-color --server; svn-lg --no-color) | GREP_OPTIONS= grep -F "$1")
+    done < <((svn-lg --no-color --server "$repoRoot"; svn-lg --no-color "$repoRoot") | GREP_OPTIONS= grep -F "$1")
 
     # Remove duplicate description lines; keep the first one (from the oldest
     # commit). Later commits often just append to the description. Keep (single)
@@ -91,7 +97,8 @@ output()
     fi
 }
 
-eval "$(svn log --non-interactive -v -r "$passedRevision" | svn-parse-logentry)" || exit $?
+parsedLogEntry="$(svn log --non-interactive -v -r "$passedRevision" "$repoRoot" | svn-parse-logentry)" || exit $?
+eval "$parsedLogEntry"
 
 case "$summary" in
     Merge\ of\ QCCR*)
@@ -134,7 +141,7 @@ EOF
 	;;
     *)
 echo "**** This is no CR."
-	readonly branchFullName=$(svn-branchname)
+	readonly branchFullName=$(svn-branchname "$repoRoot")
 	typeset -a files=("${paths[@]#/${branchFullName}/}")
 	readonly fileNum=${#files[@]}
 	[ $fileNum -eq 1 ] && readonly filePlural= || filePlural=s
