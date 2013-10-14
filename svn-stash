@@ -5,9 +5,60 @@ printUsage()
     cat <<HELPTEXT
 Save the full dirty working copy in a temporary patch (named NAME) and revert
 it.
-Usage: "$(basename "$1")" [-n|--name NAME] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
+list: Show all stashed commits.
+apply: Apply the topmost stashed commit onto the working copy.
+pop: Apply and the topmost stashed commit onto the working copy and remove it from the stash.
+drop: Remove a single stash.
+clear: Throw away all stashes.
+Usage: "$(basename "$1")" [list|apply|pop|drop|clear|-n|--name NAME] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
+
+getLastPatch()
+{
+    cd "$stashDir" && ls -1t | head -n 1
+}
+
+apply()
+{
+    [ -e "$1" ] && svn-applyr "$1"
+    status=$?
+    svn status
+    return $?
+}
+
+rootdir=$(svn-root) || exit $?
+cd "$rootdir" || exit $?
+readonly stashDir='.svn/stashes'
+
+if [ $# -eq 1 ]; then
+    case $1 in
+	list)	cd "$stashDir" || exit $?
+		IFS=$'\n'
+		for file in $(ls -1rt)
+		do
+		    printf '%s\n' "$file"
+		    diffstat -C "$file"
+		done
+		exit $?
+		;;
+	apply)	lastPatchFile="${stashDir}/$(getLastPatch)"
+		apply "$lastPatchFile"
+		exit $?
+		;;
+	pop)	lastPatchFile="${stashDir}/$(getLastPatch)"
+		apply "$lastPatchFile" && rm "$lastPatchFile"
+		exit $?
+		;;
+	drop)	lastPatchFile="${stashDir}/$(getLastPatch)"
+		[ -e "$lastPatchFile" ] && rm -i "$lastPatchFile"
+		exit $?
+		;;
+	clear)	rm -ir "${stashDir}/"*
+		exit $?
+		;;
+    esac
+fi
 
 typeset -a allargs=()
 typeset name="stash-$(date +%Y%m%d-%H%M%S)"
@@ -22,10 +73,6 @@ do
     esac
 done
 
-set -x
-rootdir=$(svn-root) || exit $?
-cd "$rootdir" || exit $?
-readonly stashDir='.svn/stashes'
 [ -d "$stashDir" ] || mkdir -p "$stashDir" || { echo >&2 'Failed to create stashes directory.'; exit $?; }
 [ -w "$stashDir" ] || { echo >&2 "Cannot write to stashes directory: ${PWD%/}/$stashDir"; exit 1; }
 
