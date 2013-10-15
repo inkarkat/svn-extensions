@@ -121,7 +121,7 @@ echo "**** $defectId"
 
 	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
-[Requirement ill-considered|Technology weakness|Faulty design|Missing implementation|Faulty implementation|Oversight|Negligence].
+[Requirement ill-considered|Technology weakness|Faulty design|Missing implementation|Faulty implementation|Inconsistency caused by duplication|Oversight|Negligence].
 
 SOLUTION:
 ${description[*]}
@@ -146,7 +146,10 @@ echo "**** This is no CR."
 	readonly fileNum=${#files[@]}
 	[ $fileNum -eq 1 ] && readonly filePlural= || filePlural=s
 	output <<EOF
-Committed $fileNum file${filePlural} below $(commonpath "${files[@]}".
+$summary
+
+${description[*]}
 EOF
+echo "**** Committed $fileNum file${filePlural} below $(commonpath "${files[@]}")."
 	;;
 esac
