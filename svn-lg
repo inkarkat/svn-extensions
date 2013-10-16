@@ -7,14 +7,14 @@ printUsage()
     cat <<HELPTEXT
 One-line log messages with author, date and commit summary.
 --no-merge	Exclude any commits that mention merge in the revision summary.
---author regexp	Limit to commits by author.
+--author REGEXP	Limit to commits by author.
 --no-list-author Omit the author name from the log; happens automatically if
-		regexp is literal text.
+		REGEXP is literal text.
 --no-color	Turn off color highlighting.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 Note: svn log option -v is not supported here, but also doesn't make sense here.
-Usage: "$(basename "$1")" [--no-merge] [--author regexp] [--no-list-author] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [--author REGEXP] [--no-list-author] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
