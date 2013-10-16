@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-One-line log messages with date and commit summary of my commits.
+One-line log messages of my commits with date and commit summary.
 Like "svn lg" filtered for my personal commits.
 --no-merge	Exclude any commits that mention merge in the revision summary.
 --server	Instead of local history, only list server revisions that you
