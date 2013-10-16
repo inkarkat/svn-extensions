@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-Show statistics on how many lines were last committed by which author. 
+Show statistics on how many lines were last committed by which author.
 Usage: "$(basename "$1")" [-r N[:M]] TARGET[@REV] [-?|-h|--help]
 HELPTEXT
 }
@@ -12,4 +12,5 @@ case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 
+set -o pipefail
 svn blame --non-interactive "$@" | cut -d' ' -f 3 | sort | uniq -c | sort -r
