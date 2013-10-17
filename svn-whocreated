@@ -58,8 +58,15 @@ printCopy()
     fi
     printf "$format" "$COLOR_HEADER" "$revision" "$source" "$destination" "$COLOR_RESET"
 }
+isFirstLog=t
 logRevision()
 {
+    if [ "$isFirstLog" ]; then
+	isFirstLog=
+    else
+	echo
+    fi
+
 #echo "**** r$1"
     svn-wrapper log -c "$1" "${logArgs[@]}"
 }
@@ -73,30 +80,17 @@ showNoMatch()
     # digits in the revision decreases.
     [ "$1" ] && printf >&2 '%s\r' "${1} "
 }
-clearNoMatch()
-{
-    # Clear the temporary status to avoid interference with the regular output.
-    # This is no problem with "less", because it redraws the entire terminal,
-    # but it leaves the remainder of the status, e.g. when piping the log output
-    # into "svn revisions", making copy-and-paste cumbersome.
-    printf >&2 '                    \r'
-}
-isFirstLog=t
 processRevision()
 {
+    rev=${1%%\">?<author*}
+    showNoMatch "r${rev##*revision=\"}"
+
     IFS=' ' read -r revision action copyFromPath < <(printf '%s\n' "$1" | \
 	xmlstarlet sel --text -t \
 	    -m "/logentry/paths/path[contains('AR', @action)]" -i ". = '$serverFilespec'" -v "concat(../../@revision, ' ', @action, ' ', @copyfrom-path)" \
 	    -n)
 
     if [ "$revision" ]; then
-	clearNoMatch
-	if [ "$isFirstLog" ]; then
-	    isFirstLog=
-	else
-	    echo
-	fi
-
 	if [ "$copyFromPath" ]; then
 	    if [ "$action" = "R" ]; then
 		printRename "$serverFilespec"
@@ -107,9 +101,6 @@ processRevision()
 	fi
 
 	logRevision "$revision"
-    else
-	rev=${1%%\">?<author*}
-	showNoMatch "r${rev##*revision=\"}"
     fi
 }
 
