@@ -3,12 +3,18 @@
 printUsage()
 {
     cat <<HELPTEXT
-Show the current path inside of the repository.
-Usage: "$(basename "$1")" [-?|-h|--help] [PATH...]
+Show the current path inside the repository.
+No trailing slashes.
+With --server, includes the full path from the repository root, including /trunk
+or any branches / tags.
+Else, prints the path within the working copy (no leading slash).
+Usage: "$(basename "$1")" [--server] [-?|-h|--help] [PATH...]
 HELPTEXT
 }
+isServer=
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+    --server)		shift; isServer=t;;
 esac
 
 
@@ -23,7 +29,8 @@ do
 	exit 1
     }
     type -P svn >/dev/null 2>&1 || exit 1
-    'svn' info "$dirspec" 2>/dev/null | awk '
+    'svn' info "$dirspec" 2>/dev/null | if [ "$isServer" ]; then
+	awk '
     BEGIN {
 	for (i = 0; i < 16; i++) {
 	    hexc[sprintf("%c", i + (i > 9 ? 55 : 48))] = i
@@ -61,4 +68,77 @@ do
 	print repositoryPath
     }
 '
+    else
+	awk -v dirspec="$(readlink -nf "$dirspec")" '
+    BEGIN {
+	for (i = 0; i < 16; i++) {
+	    hexc[sprintf("%c", i + (i > 9 ? 55 : 48))] = i
+	}
+	for (i = 32; i < 127; i++) {
+	    ++charset[sprintf("%c", i)]
+	}
+    }
+    function urldecode(s,   a, b, c, d, i)
+    {
+	d = ""
+	for (i = 1; i <= length(s); i++) {
+	    c = substr(s, i, 1)
+	    if (c == "%") {
+		a = toupper(substr(s, ++i, 1))
+		b = toupper(substr(s, ++i, 1))
+		c = sprintf("%c", hexc[a] * 16 + hexc[b])
+	    } else {
+		sub(/\+/, " ", c)
+	    }
+	    d = d (c in charset ? c : " ")
+	}
+	return d
+    }
+
+    function join(array, start, end, sep,    result, i)
+    {
+	if (sep == "")
+	    sep = " "
+	else if (sep == SUBSEP) # magic value
+	    sep = ""
+	result = array[start]
+	for (i = start + 1; i <= end; i++)
+	    result = result sep array[i]
+	return result
+    }
+
+    function resolvePath(repoPath, workPath,       repoDirCnt, repoDirs, workDirCnt, workDirs, path)
+    {
+	# The repository path consists of a branch or tag part (which can be
+	# an arbitrarily nested directory hierarchy) followed by the source
+	# code directory hierarchy. To obtain the branch / tag, the path of
+	# the working copy needs to be "subtracted" from the repository
+	# path, assuming that directories above the working copy root have
+	# different names than in the repository.
+	# (To be totally sure that one still iterates over directories in
+	# the working copy, each local directory would need to be checked
+	# for the existence of a .svn directory, for example.)
+	repoDirCnt = split(repoPath, repoDirs, "/")
+	workDirCnt = split(workPath, workDirs, "/")
+
+	while (repoDirCnt > 0 && workDirCnt > 0 && repoDirs[repoDirCnt--] == workDirs[workDirCnt--]) {
+	    # Equal directories belong to the working copy.
+	    path = "/" repoDirs[repoDirCnt + 1] path
+	}
+	return (path == "" ? "." : substr(path, 2))
+    }
+
+    $1 == "URL:" {
+	repositoryUrl = $2
+    }
+    $1 == "Repository" && $2 == "Root:" {
+	repositoryRoot = $3
+    }
+
+    END {
+	repositoryPath = urldecode(substr(repositoryUrl, length(repositoryRoot) + 2))
+	print resolvePath(repositoryPath, dirspec)
+    }
+'
+    fi
 done
