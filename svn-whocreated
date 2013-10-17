@@ -4,125 +4,60 @@ printUsage()
 {
     cat <<HELPTEXT
 Show who created / renamed the passed file.
--v		Include a list of changed files.
---no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [-v|--verbose] [--no-color] PATH [-?|-h|--help]
+Usage: "$(basename "$1")" PATH [-?|-h|--help]
 HELPTEXT
 }
-
-: ${COLOR_HEADER:='[34m'}
-: ${COLOR_RESET:='[0m'}
-
-typeset -a logArgs=()
-while [ $# -ne 0 ]
-do
-    case "$1" in
-	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--)		shift; break;;
-	--verbose|-v)	logArgs+=("$1"); shift;;
-	--no-color)	logArgs+=("$1"); shift
-			# Also clear all colors used here.
-			for color in ${!COLOR_@}; do
-			    unset $color
-			done
-			;;
-	*)		break;;
-    esac
-done
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
 if [ $# -ne 1 ]; then
     echo >&2 "ERROR: Must pass working copy PATH."
     exit 2
 fi
-filespec=$1
-serverFilespec=$(svn-pathname --server "$filespec") || exit $?
+serverFilespec=$(svn-pathname --server "$1") || exit $?
 
 
-printAddition()
-{
-    printf '%sr%s adds %s%s\n' "$COLOR_HEADER" "$revision" "$1" "$COLOR_RESET"
-}
-printRename()
-{
-    printf '%sr%s replaces %s%s\n' "$COLOR_HEADER" "$revision" "$1" "$COLOR_RESET"
-}
-printCopy()
-{
-    source=$1
-    destination=$2
-    if type -P commonpath >/dev/null; then
-	commonPath=$(commonpath "$source" "$destination")
-	source=${source#${commonPath}/}
-	destination=${destination#${commonPath}/}
-    fi
-
-    if [ "${source///}" = "$source" -a "${destination///}" = "$destination" ]; then
-	format='%sr%s copies from %s to %s%s\n'
-    else
-	format='%sr%s copies from... to...\n    %s\n    %s%s\n'
-    fi
-    printf "$format" "$COLOR_HEADER" "$revision" "$source" "$destination" "$COLOR_RESET"
-}
 logRevision()
 {
-#echo "**** r$1"
-    svn-wrapper log -c "$1" "${logArgs[@]}"
+    svn-wrapper log -c "$1"
 }
 
-showNoMatch()
-{
-    # Going through the revision history (and the processing on Cygwin) takes
-    # some time... Print a temporary status to stderr that overwrites itself as
-    # the processing progresses.
-    # Note: Print trailing space to clear previous status when the number of
-    # digits in the revision decreases.
-    [ "$1" ] && printf >&2 '%s\r' "${1} "
-}
-clearNoMatch()
-{
-    # Clear the temporary status to avoid interference with the regular output.
-    # This is no problem with "less", because it redraws the entire terminal,
-    # but it leaves the remainder of the status, e.g. when piping the log output
-    # into "svn revisions", making copy-and-paste cumbersome.
-    printf >&2 '                    \r'
-}
-isFirstLog=t
 processRevision()
 {
-    IFS=' ' read -r revision action copyFromPath < <(printf '%s\n' "$1" | \
+    IFS=' ' read -r revision copyFromPath < <(printf '%s\n' "$1" | \
 	xmlstarlet sel --text -t \
-	    -m "/logentry/paths/path[contains('AR', @action)]" -i ". = '$serverFilespec'" -v "concat(../../@revision, ' ', @action, ' ', @copyfrom-path)" \
+	    -m '//logentry' -i ".//path[@action='A'] = '$serverFilespec'" -v "concat(@revision, ' ', .//path/@copyfrom-path)" \
 	    -n)
 
     if [ "$revision" ]; then
-	clearNoMatch
-	if [ "$isFirstLog" ]; then
-	    isFirstLog=
-	else
-	    echo
-	fi
-
 	if [ "$copyFromPath" ]; then
-	    if [ "$action" = "R" ]; then
-		printRename "$serverFilespec"
-	    else
-		printCopy "$copyFromPath" "$serverFilespec"
-	    fi
+	    source=$copyFromPath
+	    destination=$serverFilespec
 	    serverFilespec=$copyFromPath
-	else
-	    printAddition "$serverFilespec"
+
+	    if type -P commonpath >/dev/null; then
+		commonPath=$(commonpath "$source" "$destination")
+		source=${source#${commonPath}/}
+		destination=${destination#${commonPath}/}
+	    fi
+
+	    printf 'Copy from %s to %s\n' "$source" "$destination"
 	fi
 
 	logRevision "$revision"
-    else
-	rev=${1%%\">?<author*}
-	showNoMatch "r${rev##*revision=\"}"
     fi
 }
 
 
-svn log --non-interactive --quiet --verbose --xml "$filespec" | \
-    sed --unbuffered -n -e '1,2d' -e '$b join' -e '/^<logentry/b join' -e 'H; b' -e ':join' -e 'x; /^$/b; s/\n/ /g; p' | \
-    while IFS=$'\n' read -r line
-    do
-	processRevision "$line"
-    done | less --quit-on-intr --raw-control-chars # XXX: With --RAW-CONTROL-CHARS, less somehow doesn't take coloring over multiple lines.
+revisionLog=
+cat /tmp/svnxml | (read -r line; read -r line; while IFS=$'\n' read -r line
+do
+    revisionLog="${revisionLog}${revisionLog:+
+}$line"
+    case "$line" in
+	'</logentry>')
+	    processRevision "$revisionLog"
+	    revisionLog=
+	    ;;
+    esac
+done)
