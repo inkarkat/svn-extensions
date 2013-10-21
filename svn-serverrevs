@@ -13,7 +13,7 @@ case "$1" in
 esac
 
 set -o pipefail
-repositoryUrl=$(svn info --non-interactive "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p') || exit $?
+repositoryUrl=$(svn-url "$@") || exit $?
 wcRevision=$(svn info --non-interactive "$@" | sed -n -e 's/^Revision: \(.*\)$/\1/p') || exit $?
 
 echo "-r HEAD:$((wcRevision + 1)) $repositoryUrl"
