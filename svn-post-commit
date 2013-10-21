@@ -110,30 +110,6 @@ output()
     fi
 }
 
-searchAllReposForPreviousMentions()
-{
-    searchForPreviousMentions "$mainRepoRoot" "$defectId"
-
-    # I would have preferred Bash's associative arrays, but these cannot be
-    # exported.
-    readonly otherRepoConfig="${mainRepoRoot}/.svn/commit-mentions-repo-paths"
-    [ -r "$otherRepoConfig" ] || return
-
-    while IFS=$'\n' read -r otherRepoRoot
-    do
-	case "$otherRepoRoot" in
-	    \#*|'') continue;;
-	esac
-
-	# These are only applicable to the main repository; clear them.
-	revision=
-	passedRevision=
-
-	getRepoInformation "$otherRepoRoot"
-	searchForPreviousMentions "$otherRepoRoot" "$defectId"
-    done < "$otherRepoConfig"
-}
-
 parsedLogEntry="$(svn log --non-interactive -v ${passedRevision:+-r "$passedRevision"} "$mainRepoRoot" | svn-parse-logentry)" || exit $?
 eval "$parsedLogEntry"
 
@@ -174,7 +150,12 @@ DOCUMENTATION CHANGE:
 FIXED FOR VERSION:
 $fixedVersion
 EOF
-	searchAllReposForPreviousMentions
+	searchForPreviousMentions "$mainRepoRoot" "$defectId"
+
+	revision=
+	passedRevision=
+	getRepoInformation /cygdrive/d/A/svn/hpsw-opr-config.alt
+	searchForPreviousMentions /cygdrive/d/A/svn/hpsw-opr-config.alt "$defectId"
 	;;
     *)
 echo "**** This is no CR."
