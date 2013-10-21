@@ -4,9 +4,9 @@ set -o pipefail
 
 : ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT=500}   # Maximum number of commits to search for previous mentions.
 
-readonly passedRevision=${1:?}; shift
+passedRevision=${1:?}; shift
 readonly committedFile=$1; shift
-repoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Cannot determine the repository's root from $committedFile"
+mainRepoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Cannot determine the repository's root from $committedFile"
 #****D echo "**** post-commit hook for $passedRevision on $committedFile"
 
 
@@ -15,34 +15,44 @@ extractDefectId()
 {
     defectId=$(printf %s "$summary" | sed -e 's/^.*\(QCCR[0-9A-Z]\+\).*$/\1/')
 }
-getAdditionalInformation()
+getRepoInformation()
 {
-    readonly branchFullName=$(svn-branchname "$repoRoot")
-    readonly branchName=${branchFullName##*/}
+    repoRoot=${1:?}
+    branchFullName=$(svn-branchname "$repoRoot")
+    branchName=${branchFullName##*/}
 
-    eval "$(svn info --non-interactive -r "$passedRevision" "$repoRoot" | svn-parse-info)"
+    eval "$(svn info --non-interactive ${passedRevision:+-r "$passedRevision"} "$repoRoot" | svn-parse-info)"
 
-    readonly RepositoryName=${RepositoryRoot##*/}
+    RepositoryName=${RepositoryRoot##*/}
     nonDefaultRepository=
     if [ "$RepositoryName" != "$repository" ]; then
 	nonDefaultRepository="${RepositoryName}'s "
     fi
 
+}
+getFullRepoInformation()
+{
+    repoRoot=${1:?}
+    getRepoInformation "$repoRoot"
     case "$repository" in
 	hpsw-opr)		defaultAffected=opr-web.war;;
 	hpsw-opr-config)	defaultAffected=opr-config-server.war;;
 	*)			defaultAffected=;;
     esac
 
-    readonly fixedVersion=$(opr-version --server -r "$passedRevision" "$repoRoot")
+    readonly fixedVersion=$(opr-version --server ${passedRevision:+-r "$passedRevision"} "$repoRoot")
 }
 
+typeset -a descriptions=$description
+typeset -a uniqueDescriptions
+typeset -a modifiedFiles
 searchForPreviousMentions()
 {
+    repoRoot=${1:?}
+    defectId=${2:?}
     hasPreviousMentions=
     revisions=$revision
-    typeset -a descriptions=$description
-    printf >&2 "\\n**** Searching ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+the last $SVN_COMMIT_MENTIONS_SEARCH_LIMIT commits }for previous mentions of %s in the summary...\\n" "$1"
+    printf >&2 "\\n**** Searching pending and ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+last }${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:-past} commits in ${RepositoryName} for previous mentions of %s in the summary...\\n" "$defectId"
     while read -r logLine
     do
 	logRevision=${logLine%% *}
@@ -50,20 +60,21 @@ searchForPreviousMentions()
 	echo "**** $logRevision"
 	hasPreviousMentions=t
 	eval "$(svn log --non-interactive -v -r "$logRevision" "$repoRoot" | svn-parse-logentry)"
-	revisions="${logRevision}, $revisions"
+	revisions="${logRevision}${revisions:+, $revisions}"
 	descriptions=("${description[@]}" "" "${descriptions[@]}")
 	IFS=$'\n' cat <<EOF
 SOLUTION:
 ${description[*]}
 
 EOF
-    done < <((svn-lg --non-interactive --no-color --server "$repoRoot"; svn-lg --non-interactive --no-color ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep -F "$1")
+    done < <((svn-lg --non-interactive --no-color --server "$repoRoot"; svn-lg --non-interactive --no-color ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep -F "$defectId")
 
     # Remove duplicate description lines; keep the first one (from the oldest
     # commit). Later commits often just append to the description. Keep (single)
     # empty lines to maintain the structure.
     local IFS=$'\n'
-    typeset -a uniqueDescriptions=$(printf '%s\n' "${descriptions[*]}" | awk -e '/^$/{print}' -e '!x[$0]++' | cat -s)
+    uniqueDescriptions+=$(printf '%s\n' "${descriptions[*]}" | awk -e '/^$/{print}' -e '!x[$0]++' | cat -s)
+    modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchName")
 
     if [ "$hasPreviousMentions" ]; then
 	echo "**** combined $defectId"
@@ -75,7 +86,7 @@ SOLUTION:
 ${uniqueDescriptions[*]}
 
 MODIFIED FILES (repository, branch and revision; per release):
-$revisions on ${nonDefaultRepository}$branchName
+${modifiedFiles[*]}
 
 AFFECTED PROGRAMS/SCRIPTS/LIBRARIES:
 $defaultAffected
@@ -99,14 +110,38 @@ output()
     fi
 }
 
-parsedLogEntry="$(svn log --non-interactive -v -r "$passedRevision" "$repoRoot" | svn-parse-logentry)" || exit $?
+searchAllReposForPreviousMentions()
+{
+    searchForPreviousMentions "$mainRepoRoot" "$defectId"
+
+    # I would have preferred Bash's associative arrays, but these cannot be
+    # exported.
+    readonly otherRepoConfig="${mainRepoRoot}/.svn/commit-mentions-repo-paths"
+    [ -r "$otherRepoConfig" ] || return
+
+    while IFS=$'\n' read -r otherRepoRoot
+    do
+	case "$otherRepoRoot" in
+	    \#*|'') continue;;
+	esac
+
+	# These are only applicable to the main repository; clear them.
+	revision=
+	passedRevision=
+
+	getRepoInformation "$otherRepoRoot"
+	searchForPreviousMentions "$otherRepoRoot" "$defectId"
+    done < "$otherRepoConfig"
+}
+
+parsedLogEntry="$(svn log --non-interactive -v ${passedRevision:+-r "$passedRevision"} "$mainRepoRoot" | svn-parse-logentry)" || exit $?
 eval "$parsedLogEntry"
 
 case "$summary" in
     Merge\ of\ QCCR*)
 	extractDefectId
 echo "**** Merge of $defectId"
-	getAdditionalInformation
+	getFullRepoInformation "$mainRepoRoot"
 
 	output <<EOF
 MODIFIED FILES (repository, branch and revision; per release):
@@ -119,7 +154,7 @@ EOF
     *QCCR*)
 	extractDefectId
 echo "**** $defectId"
-	getAdditionalInformation
+	getFullRepoInformation "$mainRepoRoot"
 
 	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
@@ -139,11 +174,11 @@ DOCUMENTATION CHANGE:
 FIXED FOR VERSION:
 $fixedVersion
 EOF
-	searchForPreviousMentions "$defectId"
+	searchAllReposForPreviousMentions
 	;;
     *)
 echo "**** This is no CR."
-	readonly branchFullName=$(svn-branchname "$repoRoot")
+	readonly branchFullName=$(svn-branchname "$mainRepoRoot")
 	typeset -a files=("${paths[@]#/${branchFullName}/}")
 	readonly fileNum=${#files[@]}
 	[ $fileNum -eq 1 ] && readonly filePlural= || filePlural=s
