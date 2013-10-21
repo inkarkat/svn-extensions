@@ -14,7 +14,7 @@ One-line log messages with author, date and commit summary.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 Note: svn log option -v is not supported here, but also doesn't make sense here.
-Usage: "$(basename "$1")" [--no-merge] [--author REGEXP] [--no-list-author] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [--author REGEXP] [--no-list-author] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
