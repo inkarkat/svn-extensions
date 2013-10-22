@@ -27,10 +27,8 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 		don't have yet.
 --no-color	Turn off color highlighting.
 --no-diff	Do not actually show the diff, just the log. In contrast to svn
-		log, you can use the superior filters for property changes.
---no-log	Do not actually show the log, just the diff. In contrast to svn
-		dp, you do not need to pass all revisions separately.
-Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
+		log, you can still use the superior filters for property changes
+Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -105,7 +103,6 @@ serverRevisionsArgs=
 nonRecursivePaths=
 nonRecursivePathsFilter=cat
 isNoDiff=
-isNoLog=
 typeset -a allargs=()
 typeset -a verboseArgs=()
 typeset -a colorargs=()
@@ -133,17 +130,12 @@ do
 			;;
 	--no-color)	colorargs+=("$1"); shift;;	# Do not pass this option to the default svn log; it doesn't understand it.
 	--no-diff)	shift; isNoDiff=t;;
-	--no-log)	shift; isNoLog=t;;
 	*)
 	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
-if [ "$isNoDiff" -a "$isNoLog" ]; then
-    echo >&2 "Nothing to show."
-    exit
-fi
 if [ "$nonRecursivePaths" ]; then
     # Resolve the remaining arguments to repository paths.
     typeset -a paths=()
@@ -204,7 +196,7 @@ do
 
 	if [ "$diffContents" ]; then
 	    # Alright, we have a diff to show, now get the log entry first.
-	    [ "$isNoLog" ] || svnLog
+	    svnLog
 
 	    # Then show the diff contents.
 	    if [ ! "$isNoDiff" ]; then
@@ -218,7 +210,7 @@ do
 	    showNoMatch "r${revision#r}"
 	fi
     else
-	if [ ! "$isNoLog" ]; then svnLog; fi && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	svnLog && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
 	let revisionCnt+=1
     fi
 
