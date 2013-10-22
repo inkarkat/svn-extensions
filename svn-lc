@@ -27,8 +27,10 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 		don't have yet.
 --no-color	Turn off color highlighting.
 --no-diff	Do not actually show the diff, just the log. In contrast to svn
-		log, you can still use the superior filters for property changes
-Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff] [-?|-h|--help]
+		log, you can use the superior filters for property changes.
+--no-log	Do not actually show the log, just the diff. In contrast to svn
+		dp, you do not need to pass all revisions separately.
+Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -78,6 +80,22 @@ showNoMatch()
     [ "$1" ] && printf >&2 '%s\r' "${1} "
 }
 
+filterRecursivePaths()
+{
+    svn-filefilter --non-recursive "$(svn-pathname "${paths[@]}")"
+}
+
+svnLog()
+{
+    [ $revisionCnt -gt 0 ] && echo # Padding between two revisions.
+
+    # The --incremental avoids the prepended separator on the first log entry.
+    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}"
+}
+
+: ${COLOR_HEADER:='[36m'}
+: ${COLOR_RESET:='[0m'}
+
 limit=
 isMergeFilter=
 authorArgs=
@@ -87,13 +105,17 @@ propFilterPropertyNamePattern=
 revisionRangeArgs=
 serverRevisionsArgs=
 nonRecursivePaths=
-isNoDiff=
+nonRecursivePathsFilter=cat
+isDiff=t
+isLog=t
 typeset -a allargs=()
+typeset -a verboseArgs=()
 typeset -a colorargs=()
 while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--verbose|-v)	verboseArgs+=("$1"); shift;; # Do not pass this option to svn diff; it doesn't understand it.
 	-c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-l|--limit)	shift; limit=$1; shift;;
@@ -111,17 +133,25 @@ do
 			# commands.
 			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
 			;;
-	--no-color)
-			colorargs+=("$1")	# Do not pass this option to the default svn log; it doesn't understand it.
+	--no-color)	colorargs+=("$1")   # Do not pass this option to the default svn log; it doesn't understand it.
 			shift
+			# And clear all colors used here.
+			for color in ${!COLOR_@}; do
+			    unset $color
+			done
 			;;
-	--no-diff)	shift; isNoDiff=t;;
+	--no-diff)	shift; isDiff=;;
+	--no-log)	shift; isLog=;;
 	*)
 	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
+if [ ! "$isDiff" -a ! "$isLog" ]; then
+    echo >&2 "Nothing to show."
+    exit
+fi
 if [ "$nonRecursivePaths" ]; then
     # Resolve the remaining arguments to repository paths.
     typeset -a paths=()
@@ -130,7 +160,13 @@ if [ "$nonRecursivePaths" ]; then
 	[ -e "$arg" ] && paths+=("$arg")
     done
 
-    nonRecursivePaths=$(svn-pathname "${paths[@]}") || exit $?
+    # Note: "svn log" only supports a single working copy PATH; let's hope we've
+    # found at least one. If there are many, Subversion will complain ("svn:
+    # When specifying working copy paths, only one target may be given"), so we
+    # can be sloppy with capturing into a scalar variable here.
+    nonRecursivePaths=$(svn-pathname --server "${paths[@]}") || exit $?
+
+    [ "$nonRecursivePaths" ] && nonRecursivePathsFilter=filterRecursivePaths
 fi
 if [ "$serverRevisionsArgs" ]; then
     # Only append the server repo URL here; the revision selection is done by the loop.
@@ -146,12 +182,12 @@ if [ "$limit" ]; then
 fi
 
 set -o pipefail
-if [ "$isNoDiff" -a ! "$propFilterMethod" ]; then
+if [ ! "$isDiff" -a ! "$propFilterMethod" ]; then
     # Optimization: It is noticeably faster (probably due to the network
     # handshaking with the Subversion server) to launch "svn log" with all
     # revisions instead of doing this separately for each revision.
     [ "$limit" ] && limitArg="${limit}q" || limitArg=
-    getRevisions | sed -e 's/^/-c /' ${limitArg:+-e} ${limitArg} | xargs --no-run-if-empty svn-wrapper log --incremental "${colorargs[@]}" "${allargs[@]}" | less --RAW-CONTROL-CHARS
+    getRevisions | sed -e 's/^/-c /' ${limitArg:+-e} ${limitArg} | xargs --no-run-if-empty svn-wrapper log --incremental "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}" | $nonRecursivePathsFilter | less --RAW-CONTROL-CHARS
     exit $?
 fi
 
@@ -176,10 +212,16 @@ do
 
 	if [ "$diffContents" ]; then
 	    # Alright, we have a diff to show, now get the log entry first.
-	    svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}"
-
+	    if [ "$isLog" ]; then
+		svnLog
+	    else
+		[ $revisionCnt -eq 0 ] || echo
+		echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
 	    # Then show the diff contents.
-	    if [ ! "$isNoDiff" ]; then
+	    fi && if [ "$isDiff" ]; then
+		if [ "$isLog" ]; then
+		    echo
+		fi
 		isColorDiff=
 		[ ${#colorargs[@]} -eq 0 ] && type -t colordiff >/dev/null && isColorDiff=t
 		printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
@@ -190,9 +232,20 @@ do
 	    showNoMatch "r${revision#r}"
 	fi
     else
-	svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${allargs[@]}" && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	if [ "$isLog" ]; then
+	    svnLog
+	else
+	    [ $revisionCnt -eq 0 ] || echo
+	    echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
+	fi && if [ "$isDiff" ]; then
+	    if [ "$isLog" ]; then
+		echo
+	    fi
+	    svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	fi
+
 	let revisionCnt+=1
     fi
 
     [ "$limit" ] && [ $revisionCnt -ge $limit ] && break
-done; [ "$revisionCnt" -gt 0 ]; } | less --RAW-CONTROL-CHARS
+done; [ "$revisionCnt" -gt 0 ]; } | $nonRecursivePathsFilter | less --RAW-CONTROL-CHARS
