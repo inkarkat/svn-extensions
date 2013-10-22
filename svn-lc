@@ -93,8 +93,6 @@ svnLog()
     svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}"
 }
 
-: ${COLOR_HEADER:='[36m'}
-: ${COLOR_RESET:='[0m'}
 
 limit=
 isMergeFilter=
@@ -106,8 +104,8 @@ revisionRangeArgs=
 serverRevisionsArgs=
 nonRecursivePaths=
 nonRecursivePathsFilter=cat
-isDiff=t
-isLog=t
+isNoDiff=
+isNoLog=
 typeset -a allargs=()
 typeset -a verboseArgs=()
 typeset -a colorargs=()
@@ -133,22 +131,16 @@ do
 			# commands.
 			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
 			;;
-	--no-color)	colorargs+=("$1")   # Do not pass this option to the default svn log; it doesn't understand it.
-			shift
-			# And clear all colors used here.
-			for color in ${!COLOR_@}; do
-			    unset $color
-			done
-			;;
-	--no-diff)	shift; isDiff=;;
-	--no-log)	shift; isLog=;;
+	--no-color)	colorargs+=("$1"); shift;;	# Do not pass this option to the default svn log; it doesn't understand it.
+	--no-diff)	shift; isNoDiff=t;;
+	--no-log)	shift; isNoLog=t;;
 	*)
 	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
-if [ ! "$isDiff" -a ! "$isLog" ]; then
+if [ "$isNoDiff" -a "$isNoLog" ]; then
     echo >&2 "Nothing to show."
     exit
 fi
@@ -182,7 +174,7 @@ if [ "$limit" ]; then
 fi
 
 set -o pipefail
-if [ ! "$isDiff" -a ! "$propFilterMethod" ]; then
+if [ "$isNoDiff" -a ! "$propFilterMethod" ]; then
     # Optimization: It is noticeably faster (probably due to the network
     # handshaking with the Subversion server) to launch "svn log" with all
     # revisions instead of doing this separately for each revision.
@@ -212,16 +204,10 @@ do
 
 	if [ "$diffContents" ]; then
 	    # Alright, we have a diff to show, now get the log entry first.
-	    if [ "$isLog" ]; then
-		svnLog
-	    else
-		[ $revisionCnt -eq 0 ] || echo
-		echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
+	    [ "$isNoLog" ] || svnLog
+
 	    # Then show the diff contents.
-	    fi && if [ "$isDiff" ]; then
-		if [ "$isLog" ]; then
-		    echo
-		fi
+	    if [ ! "$isNoDiff" ]; then
 		isColorDiff=
 		[ ${#colorargs[@]} -eq 0 ] && type -t colordiff >/dev/null && isColorDiff=t
 		printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
@@ -232,18 +218,7 @@ do
 	    showNoMatch "r${revision#r}"
 	fi
     else
-	if [ "$isLog" ]; then
-	    svnLog
-	else
-	    [ $revisionCnt -eq 0 ] || echo
-	    echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
-	fi && if [ "$isDiff" ]; then
-	    if [ "$isLog" ]; then
-		echo
-	    fi
-	    svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
-	fi
-
+	if [ ! "$isNoLog" ]; then svnLog; fi && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
 	let revisionCnt+=1
     fi
 
