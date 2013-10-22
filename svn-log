@@ -17,7 +17,7 @@ Detailed log messages.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 --no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [--no-color] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP] [--author REGEXP] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [--no-color] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -251,6 +251,7 @@ svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pip
 /^r[0-9]\+/{
     # Expand revision info into multi-line header.
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
+    2!s/^/\n/
     b
 }
 # Silently capture the changed file list in hold space.
