@@ -251,7 +251,6 @@ svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pip
 /^r[0-9]\+/{
     # Expand revision info into multi-line header.
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
-    2!s/^/\n/
     b
 }
 # Silently capture the changed file list in hold space.
