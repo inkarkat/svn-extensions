@@ -13,7 +13,7 @@ mainRepoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Can
 
 extractDefectId()
 {
-    defectId=$(printf %s "$summary" | sed -e 's/^.*\(QCCR[0-9A-Z]\+\).*$/\1/')
+    defectId=$(printf %s "$summary" | sed -e 's/^\(QCCR[0-9A-Z]\+\)\(: .*\)\?$/\1/')
 }
 getRepoInformation()
 {
@@ -67,7 +67,7 @@ SOLUTION:
 ${description[*]}
 
 EOF
-    done < <((svn-lg --non-interactive --no-color --server "$repoRoot"; svn-lg --non-interactive --no-color ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep -F "$defectId")
+    done < <((svn-lg --non-interactive --no-color --no-list-author --no-list-date --server "$repoRoot"; svn-lg --non-interactive --no-color --no-list-author --no-list-date ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep "^r[0-9]\+ ${defectId}: ")
 
     # Remove duplicate description lines; keep the first one (from the oldest
     # commit). Later commits often just append to the description. Keep (single)
