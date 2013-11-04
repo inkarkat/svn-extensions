@@ -43,8 +43,6 @@ getFullRepoInformation()
     readonly fixedVersion=$(opr-version --server ${passedRevision:+-r "$passedRevision"} "$repoRoot")
 }
 
-typeset -a descriptions=$description
-typeset -a uniqueDescriptions
 typeset -a modifiedFiles
 searchForPreviousMentions()
 {
@@ -73,14 +71,14 @@ EOF
     # commit). Later commits often just append to the description. Keep (single)
     # empty lines to maintain the structure.
     local IFS=$'\n'
-    uniqueDescriptions+=$(printf '%s\n' "${descriptions[*]}" | awk -e '/^$/{print}' -e '!x[$0]++' | cat -s)
+    typeset -a uniqueDescriptions=$(printf '%s\n' "${descriptions[*]}" | awk -e '/^$/{print}' -e '!x[$0]++' | cat -s)
     modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchName")
 
     if [ "$hasPreviousMentions" ]; then
 	echo "**** combined $defectId"
 	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
-[Missing|Faulty] implementation.
+[Requirement ill-considered|Technology weakness|Faulty design|Missing implementation|Faulty implementation|Inconsistency caused by duplication|Oversight|Negligence].
 
 SOLUTION:
 ${uniqueDescriptions[*]}
@@ -112,6 +110,7 @@ output()
 
 searchAllReposForPreviousMentions()
 {
+    typeset -a descriptions=("${description[@]}")
     searchForPreviousMentions "$mainRepoRoot" "$defectId"
 
     # I would have preferred Bash's associative arrays, but these cannot be
