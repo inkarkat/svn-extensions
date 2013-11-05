@@ -27,8 +27,10 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 		don't have yet.
 --no-color	Turn off color highlighting.
 --no-diff	Do not actually show the diff, just the log. In contrast to svn
-		log, you can still use the superior filters for property changes
-Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff] [-?|-h|--help]
+		log, you can use the superior filters for property changes.
+--no-log	Do not actually show the log, just the diff. In contrast to svn
+		dp, you do not need to pass all revisions separately.
+Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -91,6 +93,8 @@ svnLog()
     svn-wrapper log --incremental --change "$revision" "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}"
 }
 
+: ${COLOR_HEADER:='[36m'}
+: ${COLOR_RESET:='[0m'}
 
 limit=
 isMergeFilter=
@@ -102,7 +106,8 @@ revisionRangeArgs=
 serverRevisionsArgs=
 nonRecursivePaths=
 nonRecursivePathsFilter=cat
-isNoDiff=
+isDiff=t
+isLog=t
 typeset -a allargs=()
 typeset -a verboseArgs=()
 typeset -a colorargs=()
@@ -128,14 +133,25 @@ do
 			# commands.
 			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
 			;;
-	--no-color)	colorargs+=("$1"); shift;;	# Do not pass this option to the default svn log; it doesn't understand it.
-	--no-diff)	shift; isNoDiff=t;;
+	--no-color)	colorargs+=("$1")   # Do not pass this option to the default svn log; it doesn't understand it.
+			shift
+			# And clear all colors used here.
+			for color in ${!COLOR_@}; do
+			    unset $color
+			done
+			;;
+	--no-diff)	shift; isDiff=;;
+	--no-log)	shift; isLog=;;
 	*)
 	    allargs+=("$1")
 	    shift
 	    ;;
     esac
 done
+if [ ! "$isDiff" -a ! "$isLog" ]; then
+    echo >&2 "Nothing to show."
+    exit
+fi
 if [ "$nonRecursivePaths" ]; then
     # Resolve the remaining arguments to repository paths.
     typeset -a paths=()
@@ -166,7 +182,7 @@ if [ "$limit" ]; then
 fi
 
 set -o pipefail
-if [ "$isNoDiff" -a ! "$propFilterMethod" ]; then
+if [ ! "$isDiff" -a ! "$propFilterMethod" ]; then
     # Optimization: It is noticeably faster (probably due to the network
     # handshaking with the Subversion server) to launch "svn log" with all
     # revisions instead of doing this separately for each revision.
@@ -192,14 +208,20 @@ do
 	esac
 	[ "$propFilterPropertyNamePattern" ] && typeset -a propFilterArg=('--filter' "$propFilterPropertyNamePattern") || typeset -a propFilterArg=()
 
-	diffContents=$(svn-dp --no-color --change "$revision" | svn-propfilter --no-color $filterArg --scope $filterScope "${propFilterArg[@]}")
+	diffContents=$(svn-dp --no-color --change "$revision" "${allargs[@]}" | svn-propfilter --no-color $filterArg --scope $filterScope "${propFilterArg[@]}")
 
 	if [ "$diffContents" ]; then
 	    # Alright, we have a diff to show, now get the log entry first.
-	    svnLog
-
+	    if [ "$isLog" ]; then
+		svnLog
+	    else
+		[ $revisionCnt -eq 0 ] || echo
+		echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
 	    # Then show the diff contents.
-	    if [ ! "$isNoDiff" ]; then
+	    fi && if [ "$isDiff" ]; then
+		if [ "$isLog" ]; then
+		    echo
+		fi
 		isColorDiff=
 		[ ${#colorargs[@]} -eq 0 ] && type -t colordiff >/dev/null && isColorDiff=t
 		printf '%s\n' "$diffContents" | if [ "$isColorDiff" ]; then colordiff; else cat; fi
@@ -210,7 +232,18 @@ do
 	    showNoMatch "r${revision#r}"
 	fi
     else
-	svnLog && [ ! "$isNoDiff" ] && svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	if [ "$isLog" ]; then
+	    svnLog
+	else
+	    [ $revisionCnt -eq 0 ] || echo
+	    echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
+	fi && if [ "$isDiff" ]; then
+	    if [ "$isLog" ]; then
+		echo
+	    fi
+	    svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	fi
+
 	let revisionCnt+=1
     fi
 
