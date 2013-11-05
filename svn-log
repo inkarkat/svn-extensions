@@ -251,6 +251,7 @@ svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pip
 /^r[0-9]\+/{
     # Expand revision info into multi-line header.
     s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
+    2!s/^/\n/
     b
 }
 # Silently capture the changed file list in hold space.
@@ -272,11 +273,12 @@ svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pip
 
 # At the end of the revision log, print the changed file list (in case of "svn
 # log -v").
-/^-\+$/{ g; /^$/d; b }
-# Note: With --incremental (used by "svn-lc"), there is no trailing separator
-# line.
-${ g; b }
+/^-\+$/{ g; /^$/d; s/\n$//; b }
 
 # Indent revision message.
 s/^/    /
+
+# Note: With --incremental (used by "svn-lc"), there is no trailing separator
+# line.
+${ G; s/\n$//; b }
 ' | $mergeFilter | $grepFilter | $limitFilter | $colorize | less --RAW-CONTROL-CHARS
