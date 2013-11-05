@@ -117,7 +117,7 @@ searchAllReposForPreviousMentions()
     # exported.
     currentRepoRoot=$(svn-root 2>/dev/null || printf %s "$mainRepoRoot")
     readonly otherRepoConfig="${currentRepoRoot}/.svn/commit-mentions-repo-paths"
-    [ -r "$otherRepoConfig" ] || return
+    [ -r "$otherRepoConfig" ] || return 0
 
     while IFS=$'\n' read -r otherRepoRoot
     do
