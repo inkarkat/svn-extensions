@@ -30,7 +30,7 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 		log, you can use the superior filters for property changes.
 --no-log	Do not actually show the log, just the diff. In contrast to svn
 		dp, you do not need to pass all revisions separately.
-Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
+Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -41,11 +41,17 @@ getRevisions()
     if [ "$authorArgs" ]; then
 	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'contains(author,\"${authorArgs}\")'"
     fi
-    if [ "$grepArgs" ]; then
-	# XXX: Need matches() XSLT 2 function for regexp-based pattern matching.
-	# Unfortunately, this isn't yet supported by xmlstarlet / libxslt.
-	#xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'matches(msg,\"${grepArgs}\")'"
-	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'contains(msg,\"${grepArgs}\")'"
+    if [ ${#grepArgs[@]} -gt 0 ]; then
+	local condition=
+	local grepArg
+	for grepArg in "${grepArgs[@]}"
+	do
+	    # XXX: Need matches() XSLT 2 function for regexp-based pattern matching.
+	    # Unfortunately, this isn't yet supported by xmlstarlet / libxslt.
+	    #condition="${condition}${condition:+ or }matches(msg,\"${grepArg}\")"
+	    condition="${condition}${condition:+ or }contains(msg,\"${grepArg}\")"
+	done
+	xmlFilter="${xmlFilter}${xmlFilter:+ }-i '$condition'"
     fi
     #if [ "$isMergeFilter" ]; then
     #	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'matches(msg,\"[Mm]erg\\(e\\|ed\\|es\\|ing\\)\\b\")'"
@@ -66,8 +72,8 @@ getRevisions()
 	done
 	xmlFilter="${xmlFilter}'"
     fi
-
-    [ "$xmlFilter" ] && svnLogArgs=--with-no-revprops || svnLogArgs=
+####D echo >&2 "**** $xmlFilter"
+    [ "$xmlFilter" ] && svnLogArgs= || svnLogArgs=--with-no-revprops
     (eval 'svn log --non-interactive --xml' "$svnLogArgs $svnAdditionalArgs $revisionRangeArgs" '"${allargs[@]}"' || echo '</log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
 }
 
@@ -99,7 +105,7 @@ svnLog()
 limit=
 isMergeFilter=
 authorArgs=
-grepArgs=
+typeset -a grepArgs=()
 propFilterMethod=
 propFilterPropertyNamePattern=
 revisionRangeArgs=
@@ -120,7 +126,7 @@ do
 	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-l|--limit)	shift; limit=$1; shift;;
 	#--no-merge)	shift; isMergeFilter=true;;
-	--grep)		shift; grepArgs=$1; shift;;
+	--grep)		shift; grepArgs+=("$1"); shift;;
 	--author)	shift; authorArgs=$1; shift;;
 	--prop)		shift; propFilterMethod="$1"; shift;;
 	--prop-scope)	shift; propScope="$1"; shift;;
@@ -173,7 +179,7 @@ if [ "$serverRevisionsArgs" ]; then
     allargs+=("${serverRevisionsArgs##* }")
 fi
 if [ "$limit" ]; then
-    if [ ! "$authorArgs" -a ! "$grepArgs" -a ! "$propFilterMethod" ]; then
+    if [ ! "$authorArgs" -a ${#grepArgs[@]} -eq 0 -a ! "$propFilterMethod" ]; then
 	# When we do not need to do revision filtering, we can let svn log handle
 	# the limit itself.
 	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }--limit '$limit'"
