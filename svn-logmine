@@ -11,7 +11,7 @@ Like "svn log" filtered for my personal commits.
 --no-merge	Exclude any commits that mention merge in the revision summary.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
 case "$1" in
