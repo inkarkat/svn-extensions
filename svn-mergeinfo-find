@@ -1,0 +1,15 @@
+#!/bin/sh
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show logs and diff of changes to svn:mergeinfo on passed PATH.
+Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [-l|--limit ARG] [--no-color] PATH [-?|-h|--help]
+HELPTEXT
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+[ $# -eq 0 ] && { echo >&2 "ERROR: Must pass PATH."; exit 2; }
+
+svn-lc --non-recursive --prop only --prop-scope minimal --prop-filter 'svn:mergeinfo' "$@"
