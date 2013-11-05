@@ -5,12 +5,12 @@ printUsage()
     cat <<HELPTEXT
 Show last commit info in the repository.
 -v		Include a list of changed files.
---grep regexp   Limit the commits to ones with log message that matches the
+--grep REGEXP   Limit the commits to ones with log message that matches the
 		specified pattern.
---author regexp	Limit to commits by author.
+--author REGEXP	Limit to commits by author.
 --no-merge	Exclude any commits that mention merge in the revision summary.
 --no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep regexp] [--author regexp] [--no-color] [PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP] [--author REGEXP] [--no-color] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 case "$1" in
