@@ -4,12 +4,13 @@ printUsage()
 {
     cat <<HELPTEXT
 Save the full dirty working copy in a temporary patch (named NAME) and revert
-it.
-list: Show all stashed commits.
-apply: Apply the topmost stashed commit onto the working copy.
-pop: Apply and the topmost stashed commit onto the working copy and remove it from the stash.
-drop: Remove a single stash.
-clear: Throw away all stashes.
+it. Instead of creating a stash, you can also pass one of the following
+subcommands:
+list:   Show all stashed commits.
+apply:  Apply the topmost stashed commit onto the working copy.
+pop:    Apply and the topmost stashed commit onto the working copy and remove it from the stash.
+drop:   Remove a single stash.
+clear:  Throw away all stashes.
 Usage: "$(basename "$1")" [list|apply|pop|drop|clear|-n|--name NAME] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
