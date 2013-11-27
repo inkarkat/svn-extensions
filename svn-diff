@@ -22,7 +22,7 @@ diffStatArgs=
 
 # Highlight diff output if available.
 hasColorDiff=
-which colordiff >/dev/null 2>&1 && hasColorDiff=t
+type -t colordiff >/dev/null && hasColorDiff=t
 
 typeset -a allargs=()
 # Simplify setting common diff options (that do not overlap with svn options).
