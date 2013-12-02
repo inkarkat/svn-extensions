@@ -41,5 +41,5 @@ else
 		;;
 	esac
     done
-    exec "$wdiffCommand" -P --no-common "${colorMarkerArgs[@]}" "${allargs[@]}"
+    exec "$wdiffCommand" --no-common "${colorMarkerArgs[@]}" "${allargs[@]}"
 fi
