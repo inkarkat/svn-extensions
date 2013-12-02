@@ -3,6 +3,8 @@
 readonly scriptDir=$([ "${BASH_SOURCE[0]}" ] && dirname -- "${BASH_SOURCE[0]}" || exit 2)
 [ -d "$scriptDir" ] || { echo >&2 "ERROR: Cannot determine script directory!"; exit 2; }
 
+type -t wdiff >/dev/null || { echo >&2 "ERROR: wdiff tool not found"; exit 2; }
+
 typeset -a colorMarkerArgs=(--start-delete=[41m --end-delete=[0m --start-insert=[42m --end-insert=[0m)
 svnArgument=
 
