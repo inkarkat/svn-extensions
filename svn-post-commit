@@ -13,7 +13,7 @@ mainRepoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Can
 
 extractDefectId()
 {
-    defectId=$(printf %s "$summary" | sed -e 's/^\(QCCR[0-9A-Z]\+\)\(: .*\)\?$/\1/')
+    defectId=$(printf %s "$summary" | sed -e 's/^\(Merge of \)\?\(QCCR[0-9A-Z]\+\)\(: .*\)\?$/\2/' -e t -e 's/\(QCCR[0-9A-Z]\+\).*$/\1/' -e 's/^.*\(QCCR[0-9A-Z]\+\)/\1/')
 }
 getRepoInformation()
 {
