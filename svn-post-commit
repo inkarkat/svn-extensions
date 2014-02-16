@@ -11,6 +11,10 @@ mainRepoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Can
 
 
 
+extractTaskId()
+{
+    taskId=$(printf %s "$summary" | sed -e 's/^\(QCRQ[0-9A-Z]\+\).*$/\1/')
+}
 extractDefectId()
 {
     defectId=$(printf %s "$summary" | sed -e 's/^\(Merge of \)\?\(QCCR[0-9A-Z]\+\)\(: .*\)\?$/\2/' -e t -e 's/\(QCCR[0-9A-Z]\+\).*$/\1/' -e 's/^.*\(QCCR[0-9A-Z]\+\)/\1/')
@@ -177,6 +181,13 @@ $fixedVersion
 EOF
 	searchAllReposForPreviousMentions
 	;;
+    QCRQ*)
+	extractTaskId
+echo "**** This is task $taskId"
+	output <<EOF
+${revision}: ${summary#$taskId: }
+EOF
+	;;
     *)
 echo "**** This is no CR."
 	readonly branchFullName=$(svn-branchname "$mainRepoRoot")
@@ -188,6 +199,6 @@ $summary
 
 ${description[*]}
 EOF
-echo "**** Committed $fileNum file${filePlural} below $(commonpath "${files[@]}")."
+	echo "**** Committed $fileNum file${filePlural} below $(commonpath "${files[@]}")."
 	;;
 esac
