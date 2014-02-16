@@ -9,6 +9,14 @@ Detailed log messages.
 -v		Include a list of changed files.
 --grep REGEXP   Limit the commits to ones with log message that matches the
 		specified pattern.
+-i, --regexp-ignore-case
+		Match the regexp limiting patterns without regard to letters case.
+-E, --extended-regexp
+		Consider the limiting patterns to be extended regular
+		expressions instead of the default basic regular expressions.
+-F, --fixed-strings
+		Consider the limiting patterns to be fixed strings (don't
+		interpret pattern as a regular expression).
 --author REGEXP	Limit to commits by author.
 --no-merge	Exclude any commits that mention merge in the revision summary.
 #--non-recursive
@@ -17,7 +25,7 @@ Detailed log messages.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 --no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP] [--author REGEXP] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [--no-color] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [--no-color] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -102,21 +110,21 @@ processRevision()
     if [ "$authorArgs" ]; then
 	printf '%s\n' "$1" | extractHeaderItem 'Author' | grep -q "$authorArgs" || isSkip='true'
     fi
-    if [ "$grepArgs" ]; then
+    if [ ${#grepArgs[@]} -gt 0 ]; then
 	# Filter away the revision header and changed file list, and
 	# try to match the regexp in the remaining revision message.
-	printf '%s\n' "$1" | extractRevisionMessage | grep -q "$grepArgs" || isSkip='true'
+	printf '%s\n' "$1" | extractRevisionMessage | grep -q "${grepOptions[@]}" "${grepArgs[@]}" || isSkip='true'
     fi
 
     if [ "$isSkip" ]; then
 	showNoMatch "$revision"
     else
 	clearNoMatch
-	if [ "$grepArgs" -a "$grepOptions" ]; then
+	if [ ${#grepArgs[@]} -gt 0 -a "$grepColorOption" ]; then
 	    # Let (another pass of) grep highlight the matches.
 	    # We include all lines (but without highlighting) with
 	    # the regexp /$/.
-	    printf '%s\n' "$1" | grep $grepOptions -e "$grepArgs" -e '$'
+	    printf '%s\n' "$1" | grep $grepColorOption "${grepOptions[@]}" "${grepArgs[@]}" -e '$'
 	else
 	    printf '%s\n' "$1"
 	fi
@@ -195,14 +203,15 @@ typeset limitFilter=cat
 typeset mergeFilter=cat
 typeset grepFilter=cat
 typeset colorize=colorize
-typeset grepArgs=
-typeset grepOptions=
+typeset -a grepArgs=()
+typeset grepColorOption=
+typeset -a grepOptions=()
 typeset isXmlOutput=
 case "$GREP_OPTIONS" in
     # The user prefers highlighting of grep matches; enable this in here, too,
     # even though our grep is in a pipe.
-    *--color=auto*) grepOptions='--color=always';;
-    *--color=always*) grepOptions='--color=always';;
+    *--color=auto*) grepColorOption='--color=always';;
+    *--color=always*) grepColorOption='--color=always';;
 esac
 typeset authorArgs=
 typeset isServerRevisions=
@@ -215,7 +224,10 @@ do
 	--limit|-l)	shift; limit=$1; shift;;
 	--no-merge)	shift; mergeFilter='mergeFilter';;
 	--no-color)	shift; colorize='cat';;
-	--grep)		shift; grepFilter='grepFilter'; grepArgs=$1; shift;;
+	--grep)		shift; grepFilter='grepFilter'; grepArgs+=(-e "$1"); shift;;
+	--regexp-ignore-case|-i)    shift; grepOptions+=('-i');;
+	--extended-regexp|-E)	    shift; grepOptions+=('-E');;
+	--fixed-strings|-F)	    shift; grepOptions+=('-F');;
 	--author)	shift; grepFilter='grepFilter'; authorArgs=$1; shift;;
 	--server)	shift; isServerRevisions='true';;
 	--xml)		isXmlOutput=t; allargs+=("$1");  shift;;
