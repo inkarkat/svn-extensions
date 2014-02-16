@@ -8,6 +8,8 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 -v		Include a list of changed files.
 --grep REGEXP   Limit the commits to ones with log message that matches the
 		specified pattern.
+-i, --regexp-ignore-case
+		Match the regexp limiting patterns without regard to letters case.
 --author REGEXP	Limit to commits by author.
 --prop only	Limit to commits that change properties.
 --prop skip	Skip commits that only change properties.
@@ -30,7 +32,7 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 		log, you can use the superior filters for property changes.
 --no-log	Do not actually show the log, just the diff. In contrast to svn
 		dp, you do not need to pass all revisions separately.
-Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
+Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -49,7 +51,14 @@ getRevisions()
 	    # XXX: Need matches() XSLT 2 function for regexp-based pattern matching.
 	    # Unfortunately, this isn't yet supported by xmlstarlet / libxslt.
 	    #condition="${condition}${condition:+ or }matches(msg,\"${grepArg}\")"
-	    condition="${condition}${condition:+ or }contains(msg,\"${grepArg}\")"
+	    # XXX: Need XSLT 2 "i" flag to matches() or lower-case() function
+	    # for case-insensitive comparison. Work around (for ASCII
+	    # characters) with translate().
+	    if [ "$grepCaseInsensitive" ]; then
+		condition="${condition}${condition:+ or }contains(translate(msg, \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\", \"abcdefghijklmnopqrstuvwxyz\"),\"${grepArg}\")"
+	    else
+		condition="${condition}${condition:+ or }contains(msg,\"${grepArg}\")"
+	    fi
 	done
 	xmlFilter="${xmlFilter}${xmlFilter:+ }-i '$condition'"
     fi
@@ -106,6 +115,7 @@ limit=
 isMergeFilter=
 authorArgs=
 typeset -a grepArgs=()
+grepCaseInsensitive=
 propFilterMethod=
 propFilterPropertyNamePattern=
 revisionRangeArgs=
@@ -127,6 +137,7 @@ do
 	-l|--limit)	shift; limit=$1; shift;;
 	#--no-merge)	shift; isMergeFilter=true;;
 	--grep)		shift; grepArgs+=("$1"); shift;;
+	--regexp-ignore-case|-i)    shift; grepCaseInsensitive=t;;
 	--author)	shift; authorArgs=$1; shift;;
 	--prop)		shift; propFilterMethod="$1"; shift;;
 	--prop-scope)	shift; propScope="$1"; shift;;
