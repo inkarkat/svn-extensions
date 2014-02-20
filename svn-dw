@@ -10,20 +10,53 @@ type -t "$wdiffCommand" >/dev/null || { echo >&2 "ERROR: dwdiff / wdiff tool not
 typeset -a colorMarkerArgs=(-w [41m -x [0m -y [42m -z [0m)
 svnArgument=
 
+printUsage()
+{
+    cat <<HELPTEXT
+Short textual description.
+# Note: short followed by long option; if the user knows the short one, she can
+# skim the long one.
+Usage: "$(basename "$1")" [-c M | -r N[:M]] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
+HELPTEXT
+}
+
 # The wdiff tool does not support certain arguments that svn diff passes.
 # Therefore, install this script as a wrapper, and filter out those arguments in
 # stage 2.
 if [ "${*/--stage2/}" = "$*" ]; then
     stageArgument=--stage2
-    if [ "$1" = '--no-color' ]; then
-	# The --no-color argument is handled by svn-diff itself, and not passed
-	# on to the diff tool. Therefore, pass this information inside the
-	# internal --stage2 argument.
-	stageArgument=--stage2-no-color
-	svnArgument=--no-color
-	shift
-    fi
-    exec "$scriptDir/svn-diff" $svnArgument --diff-cmd "${BASH_SOURCE[0]}" -x "$stageArgument" "$@"
+    typeset -a svnArgs=()
+    typeset -a wdiffArgs=()
+    while [ $# -gt 0 ]
+    do
+	case "$1" in
+	    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	    --no-color)
+		# The --no-color argument is handled by svn-diff itself, and not
+		# passed on to the diff tool. Therefore, pass this information
+		# inside the internal --stage2 argument.
+		stageArgument=--stage2-no-color
+		svnArgument=--no-color
+		shift
+		;;
+	    --delimiters=*)	    wdiffArgs+=("$1"); shift;;
+	    -d)			    wdiffArgs+=("$1" "$2"); shift; shift;;
+	    --punctuation|-P)	    wdiffArgs+=("$1"); shift;;
+	    --line-numbers*)	    wdiffArgs+=("$1"); shift;;
+	    -L)			    wdiffArgs+=("--line-numbers"); shift;;
+	    -L*)		    wdiffArgs+=("--line-numbers=${1#-L}"); shift;;
+	    --context*|-C*)	    wdiffArgs+=("$1"); shift;;
+	    --statistics|-s)	    wdiffArgs+=("$1"); shift;;
+	    --match-context*|-m*)   wdiffArgs+=("$1"); shift;;
+	    --aggregate-changes)    wdiffArgs+=("$1"); shift;;
+	    --algorithm=*)	    wdiffArgs+=("$1"); shift;;
+	    -A)			    wdiffArgs+=("$1" "$2"); shift; shift;;
+	    --paragraph-separator*|-S*)	wdiffArgs+=("$1"); shift;;
+	    *)			    svnArgs+=("$1"); shift;;
+	esac
+    done
+
+    exec "$scriptDir/svn-diff" $svnArgument --diff-cmd "${BASH_SOURCE[0]}" -x "${stageArgument} ${wdiffArgs[*]}" "${svnArgs[@]}"
 else
     typeset -a allargs=()
     while [ $# -gt 0 ]
@@ -41,5 +74,6 @@ else
 		;;
 	esac
     done
+
     exec "$wdiffCommand" --no-common "${colorMarkerArgs[@]}" "${allargs[@]}"
 fi
