@@ -10,11 +10,12 @@ One-line log messages with author, date and commit summary.
 --author REGEXP	Limit to commits by author.
 --no-list-author Omit the author name from the log; happens automatically if
 		REGEXP is literal text.
+--no-list-date	Omit the date from the log.
 --no-color	Turn off color highlighting.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 Note: svn log option -v is not supported here, but also doesn't make sense here.
-Usage: "$(basename "$1")" [--no-merge] [--author REGEXP] [--no-list-author] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--no-color] [--server] [PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [--author REGEXP] [--no-list-author] [--no-list-date] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--no-color] [--server] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -24,13 +25,19 @@ HELPTEXT
 : ${COLOR_RESET:='[0m'}
 colorize()
 {
-    sed --unbuffered -e 's/^\(r[0-9]\+\) \(([^)]\+)\) \(.*\)/'"${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_AUTOR_DATE}\\2${COLOR_RESET} \\3/"
+    if [ ! "$isListAuthor" -a ! "$isListDate" ]; then
+	colorizer='s/^\(r[0-9]\+\) \(.*\)/'"${COLOR_REVISION}\\1${COLOR_RESET} \\2/"
+    else
+	colorizer='s/^\(r[0-9]\+\) \(([^)]\+)\) \(.*\)/'"${COLOR_REVISION}\\1${COLOR_RESET} ${COLOR_AUTOR_DATE}\\2${COLOR_RESET} \\3/"
+    fi
+    sed --unbuffered -e "$colorizer"
 }
 
 typeset limit=
 typeset limitFilter=cat
 typeset filter=cat
-typeset isListAuthor=true
+typeset isListAuthor=t
+typeset isListDate=t
 typeset authorArgs=
 typeset isServerRevisions=
 typeset colorize=colorize
@@ -44,6 +51,7 @@ do
 	--no-merge)	shift; filter="grep --line-buffered -iv ${SVN_MERGE_COMMENT_PATTERN}";;
 	--no-color)	shift; colorize='cat';;
 	--no-list-author)	shift; isListAuthor=;;
+	--no-list-date)		shift; isListDate=;;
 	--author)	shift;
 			authorArgs=$1;
 			shift;
@@ -71,13 +79,19 @@ if [ "$limit" ]; then
     fi
 fi
 
+if [ ! "$isListAuthor" -a ! "$isListDate" ]; then
+    format=
+else
+    format="(${isListAuthor:+\2${isListDate:+, }}${isListDate:+\3}) "
+fi
+
 readonly today=$(date +%F)
 set -o pipefail
 svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pipe') | sed --unbuffered -n -e "${authorArgs:+/^r[0-9]\+ | [^|]*${authorArgs}[^|]* |/!d}" -e '
 /^r[0-9]\+/{
-'"/ | ${today} /  "'s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *[^ |]\+ \([^ |]\+\) [^|]*|.*/\1 ('"${isListAuthor:+\2, }"'\3) /
+'"/ | ${today} /  "'s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *[^ |]\+ \([^ |]\+\) [^|]*|.*/\1 '"${format}"'/
     t done
-		    s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *\([^ |]\+\)[^|]*|.*/\1 ('"${isListAuthor:+\2, }"'\3) /
+		    s/\(^r[0-9]\+\) *| *\([^ |]\+\) | *\([^ |]\+\)[^|]*|.*/\1 '"${format}"'/
 :done
     N
     N
