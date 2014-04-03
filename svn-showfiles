@@ -6,10 +6,10 @@ printUsage()
 {
     cat <<HELPTEXT
 Show the files modified in passed revision or revision range.
---author regexp	Limit to commits by author.
+--author REGEXP	Limit to commits by author.
 --server	Instead of local history, only consider server revisions that
 		you don't have yet.
-Usage: "$(basename "$1")" [--author regexp] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
 Example: "$(basename "$1")" --author mike -r {2012-04-01:HEAD}
 HELPTEXT
 }
