@@ -92,7 +92,7 @@ showNoMatch()
     # status to stderr that overwrites itself as the processing progresses.
     # Note: Print trailing space to clear previous status when the number of
     # digits in the revision decreases.
-    [ "$1" ] && printf >&2 '%s\r' "${1} "
+    [ "$isStderrToTerminal" -a "$1" ] && printf >&2 '%s\r' "${1} "
 }
 
 filterRecursivePaths()
@@ -111,6 +111,7 @@ svnLog()
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_RESET:='[0m'}
 
+[ -t 2 ] && readonly isStderrToTerminal= || readonly isStderrToTerminal=
 limit=
 isMergeFilter=
 authorArgs=
