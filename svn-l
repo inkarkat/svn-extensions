@@ -3,12 +3,12 @@
 printUsage()
 {
     cat <<HELPTEXT
-Minimal one-line log messages with commit summary. 
---no-merge	Exclude any commits that mention merge in the revision summary. 
---no-color	Turn off color highlighting. 
+Minimal one-line log messages with commit summary.
+--no-merge	Exclude any commits that mention merge in the revision summary.
+--no-color	Turn off color highlighting.
 --server	Instead of local history, only list server revisions that you
-		don't have yet. 
-Note: svn log option -v is not supported here, but also doesn't make sense here. 
+		don't have yet.
+Note: svn log option -v is not supported here, but also doesn't make sense here.
 Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
@@ -46,6 +46,7 @@ if [ "$isServerRevisions" ]; then
     allargs+=($(svn-serverrevs))
 fi
 
+set -o pipefail
 svn log --non-interactive "${allargs[@]}" | sed --unbuffered -ne '
 /^r[0-9]\+/{
     s/\(^r[0-9]\+\) *.*/\1 /
