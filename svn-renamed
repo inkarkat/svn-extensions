@@ -15,7 +15,7 @@ HELPTEXT
 
 getRevisions()
 {
-    (eval "svn log --non-interactive --xml --with-no-revprops $revisionRangeArgs" '"${allargs[@]}"' || echo '<log></log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n
+    (eval "svn log --non-interactive --xml --with-no-revprops $revisionRangeArgs" '"${allargs[@]}"' || echo '</log>') | xmlstarlet sel --text -t -m '//logentry' -v '@revision' -n
     echo 'EOF'
 }
 
