@@ -80,4 +80,8 @@ done
 readonly stashFilespec="${stashDir}/${name}.patch"
 svn-diff --no-color "${allargs[@]}" > "$stashFilespec" || exit $?
 diffstat -C "$stashFilespec"
-svn revert --recursive .
+if [ ${#allargs[@]} -eq 0 ]; then
+    svn revert --recursive .
+else
+    svn revert --recursive "${allargs[@]}"
+fi
