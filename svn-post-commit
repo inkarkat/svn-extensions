@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -o pipefail
+[ -t 2 ] && readonly isStderrToTerminal= || readonly isStderrToTerminal=
 
 : ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT=500}   # Maximum number of commits to search for previous mentions.
 
@@ -54,7 +55,7 @@ searchForPreviousMentions()
     defectId=${2:?}
     hasPreviousMentions=
     revisions=$revision
-    printf >&2 "\\n**** Searching pending and ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+last }${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:-past} commits in ${RepositoryName} for previous mentions of %s in the summary...\\n" "$defectId"
+    [ "$isStderrToTerminal" ] && printf >&2 "\\n**** Searching pending and ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+last }${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:-past} commits in ${RepositoryName} for previous mentions of %s in the summary...\\n" "$defectId"
     while read -r logLine
     do
 	logRevision=${logLine%% *}
