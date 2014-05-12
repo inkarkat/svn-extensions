@@ -3,12 +3,12 @@
 # if they exist. This is necessary because the svn alias / svn() function from
 # aliases.sh is not active inside a shell script. (And I also do not want other
 # scripts to pick up my customized svn command, which would happed if I put a
-# svn script into the PATH.) 
+# svn script into the PATH.)
 
 printUsage()
 {
     cat <<HELPTEXT
-Internal helper script. 
+Internal helper script.
 Usage: "$(basename "$1")" alias|command [ARGS...]
 HELPTEXT
 }
