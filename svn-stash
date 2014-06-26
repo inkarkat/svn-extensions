@@ -11,7 +11,8 @@ apply:  Apply the topmost stashed commit onto the working copy.
 pop:    Apply and the topmost stashed commit onto the working copy and remove it from the stash.
 drop:   Remove a single stash.
 clear:  Throw away all stashes.
-Usage: "$(basename "$1")" [list|apply|pop|drop|clear|-n|--name NAME] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
+create:	Just create a patch, but do not revert the working copy.
+Usage: "$(basename "$1")" [list|apply|pop|drop|clear|create|-n|--name NAME] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -32,6 +33,7 @@ rootdir=$(svn-root) || exit $?
 cd "$rootdir" || exit $?
 readonly stashDir='.svn/stashes'
 
+typeset isRevert=t
 if [ $# -eq 1 ]; then
     case $1 in
 	list)	cd "$stashDir" || exit $?
@@ -63,6 +65,7 @@ fi
 
 typeset -a allargs=()
 typeset name="stash-$(date +%Y%m%d-%H%M%S)"
+[ "$1" = 'create' ] && { shift; isRevert=; }
 while [ $# -ne 0 ]
 do
     case "$1" in
@@ -80,8 +83,10 @@ done
 readonly stashFilespec="${stashDir}/${name}.patch"
 svn-diff --no-color "${allargs[@]}" > "$stashFilespec" || exit $?
 diffstat -C "$stashFilespec"
-if [ ${#allargs[@]} -eq 0 ]; then
-    svn revert --recursive .
-else
-    svn revert --recursive "${allargs[@]}"
+if [ "$isRevert" ]; then
+    if [ ${#allargs[@]} -eq 0 ]; then
+	svn revert --recursive .
+    else
+	svn revert --recursive "${allargs[@]}"
+    fi
 fi
