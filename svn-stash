@@ -26,7 +26,7 @@ apply()
     [ -e "$1" ] && svn-applyr "$1"
     status=$?
     svn status
-    return $?
+    return $status
 }
 
 rootdir=$(svn-root) || exit $?
