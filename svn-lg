@@ -40,6 +40,7 @@ typeset isListAuthor=t
 typeset isListDate=t
 typeset authorArgs=
 typeset isServerRevisions=
+typeset -a serverArgs=
 typeset colorize=colorize
 typeset -a allargs=()
 while [ $# -gt 0 ]
@@ -61,13 +62,17 @@ do
 			;;
 	--server)	shift; isServerRevisions='true';;
 	*)
-	    allargs+=("$1")
+	    if [ "$isServerRevisions" -a -d "$1" ]; then
+		serverArgs=("$1")
+	    else
+		allargs+=("$1")
+	    fi
 	    shift
 	    ;;
     esac
 done
 if [ "$isServerRevisions" ]; then
-    allargs=($(svn-serverrevs "${allargs[@]}"))
+    allargs+=($(svn-serverrevs "${serverArgs[@]}"))
 fi
 if [ "$limit" ]; then
     if [ "$filter" = 'cat' -a ! "$authorArgs" ]; then
