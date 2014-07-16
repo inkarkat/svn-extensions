@@ -36,6 +36,8 @@ printChangedPath()
 
 
 revisionRangeArgs=
+typeset isServerRevisions=
+typeset -a serverArgs=
 serverRevisionsArgs=
 isFromPath=
 isOmitRevision=
@@ -47,23 +49,27 @@ do
 	-c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	-l|--limit)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-	--server)	shift
-			serverRevisionsArgs=$(svn-serverrevs)
-			# Only add the revision filter for getRevisions() here,
-			# the server repo URL must be passed to all svn
-			# commands.
-			revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
-			;;
+	--server)	shift; isServerRevisions='true';;
 	--from)		shift; isFrom=t;;
 	--omit-revision)
 			shift; isOmitRevision=;;
 	*)
-	    allargs+=("$1")
+	    if [ "$isServerRevisions" -a -d "$1" ]; then
+		serverArgs=("$1")
+	    else
+		allargs+=("$1")
+	    fi
 	    shift
 	    ;;
     esac
 done
-if [ "$serverRevisionsArgs" ]; then
+if [ "$isServerRevisions" ]; then
+    serverRevisionsArgs=$(svn-serverrevs "${serverArgs[@]}")
+
+    # Only add the revision filter for getRevisions() here, the server repo URL
+    # must be passed to all svn commands.
+    revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
+
     # Only append the server repo URL here; the revision selection is done by the loop.
     allargs+=("${serverRevisionsArgs##* }")
 fi
