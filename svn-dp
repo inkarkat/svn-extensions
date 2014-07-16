@@ -12,7 +12,7 @@ Can also show statistics with --stat, --numstat and --shortstat.
 --no-color	Turn off color highlighting.
 Note: The [@REV] is only a revision peg for use on the server; you cannot
 specify a local revision with it.
-Usage: "$(basename "$1")" [-b] [-w] [[-r|--revision] REV [[-r|--revision] REV ...]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
+Usage: "$(basename "$1")" [-b] [-w] [[-r|--revision] REV [[-r|--revision] REV ...]] [--stat|--numstat|--shortstat [--separate-stats]] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -22,6 +22,7 @@ isColor=t
 typeset -a allargs=()
 diffStatArgs=
 typeset -a statArgs=()
+isSeparateStats=
 typeset -a revisions=()
 while [ $# -gt 0 ]
 do
@@ -41,22 +42,20 @@ do
 	?(r)+([0-9]))	       revisions+=("${1#r}"); shift;;
 	--stat)
 	    statArgs+=("$1")
-	    allargs+=('--no-color')	# Pass option along to my svn diff wrapper.
 	    shift
 	    diffStatArgs='-C'
 	    ;;
 	--numstat)
 	    statArgs+=("$1")
-	    allargs+=('--no-color')	# Pass option along to my svn diff wrapper.
 	    shift
 	    diffStatArgs='-C -f0'
 	    ;;
 	--shortstat)
 	    statArgs+=("$1")
-	    allargs+=('--no-color')	# Pass option along to my svn diff wrapper.
 	    shift
 	    diffStatArgs='-C -s'
 	    ;;
+	--separate-stats)		shift; isSeparateStats=t;;
 	*)
 	    allargs+=("$1")
 	    shift
@@ -94,18 +93,25 @@ if [ ${#revisions[@]} -eq 0 ]; then
 elif [ ${#revisions[@]} -eq 1 ]; then
     diffHandlingMoves $revisions "${statArgs[@]}" "${allargs[@]}"
 else
+    typeset isPipeThroughStat=
+    if [ ${#statArgs} -gt 0 -a ! "$isSeparateStats" ]; then
+	allargs+=('--no-color')	# We don't need coloring in the intermediate diff output; diffstat will summarize it, anyway.
+	statArgs=() # Don't stat individual diffs.
+	isPipeThroughStat=t
+    fi
+
     typeset isFirstEntry=t
     for revision in "${revisions[@]}"
     do
-	if [ ${#statArgs} -eq 0 ]; then
+	if [ ! "$isPipeThroughStat" ]; then
 	    [ "$isFirstEntry" ] && isFirstEntry= || echo
 	    echo "${COLOR_HEADER}revision r${revision}${COLOR_RESET}"
 	fi
-	diffHandlingMoves $revision "${allargs[@]}"
+	diffHandlingMoves $revision "${statArgs[@]}" "${allargs[@]}"
     done | \
-	if [ ${#statArgs} -eq 0 ]; then
-	    less --quit-on-intr --RAW-CONTROL-CHARS
-	else
+	if [ "$isPipeThroughStat" ]; then
 	    diffstat $diffStatArgs | less --quit-on-intr --RAW-CONTROL-CHARS
+	else
+	    less --quit-on-intr --RAW-CONTROL-CHARS
 	fi
 fi
