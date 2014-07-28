@@ -162,9 +162,10 @@ EOF
 echo "**** $defectId"
 	getFullRepoInformation "$mainRepoRoot"
 
+	problemDescription=$(sed -n -e '/^TECHNICAL PROBLEM DESCRIPTION/{ N; s/^[^\n]*\n//; p }' ~/.vim/templates/cr_resolution.txt)
 	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
-[Requirement ill-considered|Technology weakness|Faulty design|Missing implementation|Faulty implementation|Inconsistency caused by duplication|Oversight|Negligence|Work in progress].
+${problemDescription}
 
 SOLUTION:
 ${description[*]}
