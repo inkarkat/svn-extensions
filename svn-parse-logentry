@@ -23,7 +23,7 @@ function join(array, start, end,      result, i)
 
 
 # Capture the metadata.
-/^r[0-9]+/ {
+/^r[0-9]+/ && scalar["revision"] == "" { # Only take the first seen revision; this avoids that another occurrence of a revision in the description mistakenly restarts the parsing.
     scalar["revision"] = $1
     scalar["author"] = $2
     scalar["timestampFull"] = $3
