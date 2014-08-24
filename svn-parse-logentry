@@ -4,7 +4,7 @@ BEGIN {
     FS = " \\| "
     fileCnt = 0
     descriptionCnt = 0
-    isCaptureDescription = 0
+    isCaptureMessage = 0
     isCaptureSummary = 1
 }
 
@@ -37,7 +37,7 @@ function join(array, start, end,      result, i)
 /^Changed paths:/,/^$/ {
     if ($0 == "Changed paths:") next
     if ($0 == "") {
-	isCaptureDescription = 1
+	isCaptureMessage = 1
 	next
     }
 
@@ -47,8 +47,8 @@ function join(array, start, end,      result, i)
     next
 }
 /^$/ {
-    if (! isCaptureDescription) {
-	isCaptureDescription = 1
+    if (! isCaptureMessage) {
+	isCaptureMessage = 1
 	next
     } else if (isCaptureSummary) {
 	isCaptureSummary = 0
@@ -56,9 +56,9 @@ function join(array, start, end,      result, i)
     }
 }
 
-# Capture the summary and description.
+# Capture the summary and description of the commit message.
 {
-    if (isCaptureDescription) {
+    if (isCaptureMessage) {
 	if (isCaptureSummary) {
 	    if (scalar["summary"] == "")
 		scalar["summary"] = $0
