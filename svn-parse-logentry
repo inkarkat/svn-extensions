@@ -77,7 +77,7 @@ END {
     }
 
     # Prune the end boilerplace from the captured description.
-    if (descriptionCnt > 1) {
+    if (descriptionCnt > 0) {
 	if (list["description"][descriptionCnt - 1] ~ /^-+$/) {
 	    delete list["description"][descriptionCnt - 1]
 	    descriptionCnt -= 1
