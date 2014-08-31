@@ -6,6 +6,7 @@ printUsage()
 Show logs together with diff between commits.
 Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 -v		Include a list of changed files.
+-R, --reverse	Show in reverse order.
 --grep REGEXP   Limit the commits to ones with log message that matches the
 		specified pattern.
 -i, --regexp-ignore-case
@@ -32,13 +33,13 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 		log, you can use the superior filters for property changes.
 --no-log	Do not actually show the log, just the diff. In contrast to svn
 		dp, you do not need to pass all revisions separately.
-Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
+Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
 HELPTEXT
 }
 
 getRevisions()
 {
-    typeset svnAdditionalArgs=
+    typeset -a svnAdditionalArgs=()
     typeset xmlFilter=
     if [ "$authorArgs" ]; then
 	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'contains(author,\"${authorArgs}\")'"
@@ -67,7 +68,7 @@ getRevisions()
     #fi
     if [ "$nonRecursivePaths" ]; then
 	# We need the file path information from the verbose log.
-	svnAdditionalArgs="${svnAdditionalArgs}${svnAdditionalArgs:+ }--verbose"
+	svnAdditionalArgs+=('--verbose')
 
 	isFirst=t
 	for path in "${nonRecursivePaths[@]}"
@@ -82,8 +83,8 @@ getRevisions()
 	xmlFilter="${xmlFilter}'"
     fi
 ####D echo >&2 "**** $xmlFilter"
-    [ "$xmlFilter" ] && svnLogArgs= || svnLogArgs=--with-no-revprops
-    (eval 'svn log --non-interactive --xml' "$svnLogArgs $svnAdditionalArgs $revisionRangeArgs" '"${allargs[@]}"' || echo '</log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
+    [ "$xmlFilter" ] && typeset -a svnLogArgs=() || typeset -a svnLogArgs=('--with-no-revprops')
+    (svn log --non-interactive --xml "${svnLogArgs[@]}" "${svnAdditionalArgs[@]}" "${revisionRangeArgs[@]}" "${allargs[@]}" || echo '</log>') | eval "xmlstarlet sel --text -t -m '//logentry' $xmlFilter -v '@revision' -n"
 }
 
 showNoMatch()
@@ -113,13 +114,14 @@ svnLog()
 
 [ -t 2 ] && readonly isStderrToTerminal= || readonly isStderrToTerminal=
 limit=
+isReverse=
 isMergeFilter=
 authorArgs=
 typeset -a grepArgs=()
 grepCaseInsensitive=
 propFilterMethod=
 propFilterPropertyNamePattern=
-revisionRangeArgs=
+typeset -a revisionRangeArgs=()
 serverRevisionsArgs=
 nonRecursivePaths=
 nonRecursivePathsFilter=cat
@@ -135,8 +137,9 @@ do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--verbose|-v)	verboseArgs+=("$1"); shift;; # Do not pass this option to svn diff; it doesn't understand it.
-	-c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+	-c|--change)	revisionRangeArgs+=("$1" "$2"); shift; shift;;
+	-r|--revision)	revisionRangeArgs+=("$1" "$2"); shift; shift;;
+	-R|--reverse)	shift; isReverse=t;;
 	-l|--limit)	shift; limit=$1; shift;;
 	#--no-merge)	shift; isMergeFilter=true;;
 	--grep)		shift; grepArgs+=("$1"); shift;;
@@ -170,8 +173,27 @@ if [ "$isServerRevisions" ]; then
     serverRevisionsArgs=$(svn-serverrevs "${serverArgs[@]}")
     # Only add the revision filter for getRevisions() here, the server repo URL
     # must be passed to all svn commands.
-    revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
+    revisionRangeArgs+=(${serverRevisionsArgs% *})
 fi
+if [ "$isReverse" ]; then
+    if [ ${#revisionRangeArgs[@]} -eq 0 ]; then
+	revisionRangeArgs=('-r' '1:BASE')
+    else
+	typeset -a tmpArgs=()
+	for (( idx=${#revisionRangeArgs[@]}-2 ; idx>=0 ; idx-=2 ))
+	do
+	    IFS=: read -a ranges <<< "${revisionRangeArgs[idx+1]}"
+	    if [ ${#ranges[@]} -eq 2 ]; then
+		rangeArg="${ranges[1]}:${ranges[0]}"
+	    else
+		rangeArg="${revisionRangeArgs[idx+1]}"
+	    fi
+	    tmpArgs+=("${revisionRangeArgs[idx]}" "$rangeArg")
+	done
+	typeset -a revisionRangeArgs=("${tmpArgs[@]}")
+    fi
+fi
+
 if [ ! "$isDiff" -a ! "$isLog" ]; then
     echo >&2 "Nothing to show."
     exit
@@ -200,7 +222,7 @@ if [ "$limit" ]; then
     if [ ! "$authorArgs" -a ${#grepArgs[@]} -eq 0 -a ! "$propFilterMethod" ]; then
 	# When we do not need to do revision filtering, we can let svn log handle
 	# the limit itself.
-	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }--limit '$limit'"
+	revisionRangeArgs+=('--limit' "$limit")
 	limit=
     fi
 fi
