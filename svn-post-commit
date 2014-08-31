@@ -40,7 +40,7 @@ getFullRepoInformation()
     repoRoot=${1:?}
     getRepoInformation "$repoRoot"
     case "$repository" in
-	hpsw-opr)		defaultAffected=opr-web.war;;
+	hpsw-opr-core)		defaultAffected=opr-web.war;;
 	hpsw-opr-config)	defaultAffected=opr-config-server.war;;
 	*)			defaultAffected=;;
     esac
