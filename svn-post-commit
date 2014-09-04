@@ -1,7 +1,6 @@
 #!/bin/bash
 
 set -o pipefail
-shopt -qs extglob
 [ -t 2 ] && readonly isStderrToTerminal=t || readonly isStderrToTerminal=
 
 : ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT=500}   # Maximum number of commits to search for previous mentions.
@@ -48,6 +47,14 @@ getFullRepoInformation()
 
     readonly fixedVersion=$(opr-version --server ${passedRevision:+-r "$passedRevision"} "$repoRoot")
 }
+getInterestingCommitSummary()
+{
+    if [ "${summary#${defectId}: }" == "$summary" ]; then
+	# The summary does not start with the defect ID; it's interesting, but
+	# omit the defect ID itself.
+	printf '%s\n ' "${summary/${defectId}: /}"
+    fi
+}
 
 typeset -a modifiedFiles
 searchForPreviousMentions()
@@ -55,7 +62,7 @@ searchForPreviousMentions()
     repoRoot=${1:?}
     defectId=${2:?}
     hasPreviousMentions=
-    previousSummary=$summary
+    laterSummary=$summary
     revisions=$revision
     [ "$isStderrToTerminal" ] && printf >&2 "\\n**** Searching pending and ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+last }${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:-past} commits in ${RepositoryName} for previous mentions of %s in the summary...\\n" "$defectId"
     while read -r logLine
@@ -63,24 +70,34 @@ searchForPreviousMentions()
 	logRevision=${logLine%% *}
 	[ "${logRevision#r}" = "${revision#r}" ] && continue
 	echo "**** $logRevision"
+	if [ ! "$hasPreviousMentions" ]; then
+	    descriptions+=("(r${revision#r})")
+	fi
 	hasPreviousMentions=t
 	eval "$(svn log --non-interactive -v -r "$logRevision" "$repoRoot" | svn-parse-logentry)"
 	revisions="${logRevision}${revisions:+, $revisions}"
-	if [ "${summary#${previousSummary}}" = "$summary" ]; then
-	    # Summary is different from the previous one and has not just been
-	    # appended to. Include the previous summary; it may provide
-	    # necessary context for the long description.
-	    descriptions=("${description[@]}" "" "${previousSummary/${defectId}?(: )/}" "${descriptions[@]}")
+	if [ "$laterSummary" -a "${laterSummary#${summary}}" = "$laterSummary" ]; then
+	    # Summary is different from the later commit's and has not just been
+	    # appended to. Include it; it may provide necessary context for the
+	    # long description.
+	    descriptions=("${description[@]}" "(r${logRevision#r})" "" "${laterSummary/${defectId}: /}" "${descriptions[@]}")
 	else
-	    descriptions=("${description[@]}" "" "${descriptions[@]}")
+	    descriptions=("${description[@]}" "(r${logRevision#r})" "" "${descriptions[@]}")
 	fi
-	previousSummary=$summary
+	laterSummary=$summary
+
+	local interestingCommitSummary=$(getInterestingCommitSummary)
+	if [ "$interestingCommitSummary" ]; then
+	    descriptions=("${interestingCommitSummary% }" "${descriptions[@]}")
+	    laterSummary=
+	fi
+
 	IFS=$'\n' cat <<EOF
 SOLUTION:
-${description[*]}
+${interestingCommitSummary% }${description[*]}
 
 EOF
-    done < <((svn-lg --non-interactive --no-color --no-list-author --no-list-date --server "$repoRoot"; svn-lg --non-interactive --no-color --no-list-author --no-list-date ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep "^r[0-9]\+ ${defectId}: ")
+    done < <((svn-lg --non-interactive --no-color --no-list-author --no-list-date --server "$repoRoot"; svn-lg --non-interactive --no-color --no-list-author --no-list-date ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep "^r[0-9]\+ \([^[:space:]]\+: \)*${defectId}: ")
 
     # Remove duplicate description lines; keep the first one (from the oldest
     # commit). Later commits often just append to the description. Keep (single)
@@ -173,12 +190,13 @@ echo "**** $defectId"
 	getFullRepoInformation "$mainRepoRoot"
 
 	problemDescription=$(sed -n -e '/^TECHNICAL PROBLEM DESCRIPTION/{ N; s/^[^\n]*\n//; p }' ~/.vim/templates/cr_resolution.txt)
+	interestingCommitSummary=$(getInterestingCommitSummary)
 	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
 ${problemDescription}
 
 SOLUTION:
-${description[*]}
+${interestingCommitSummary% }${description[*]}
 
 MODIFIED FILES (repository, branch and revision; per release):
 $revision on ${nonDefaultRepository}$branchName
