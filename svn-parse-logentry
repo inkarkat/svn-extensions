@@ -55,6 +55,13 @@ function join(array, start, end,      result, i)
 	next
     }
 }
+/^-+$/ {
+    if (isCaptureMessage) {
+	# The summary ends before the end boilerplate (in case no description
+	# follows).
+	isCaptureSummary = 0
+    }
+}
 
 # Capture the summary and description of the commit message.
 {
@@ -77,6 +84,9 @@ END {
     }
 
     # Prune the end boilerplace from the captured description.
+    # We do this after the parsing (instead of stopping the parsing at a
+    # boilerplate line) to capture potential lines contained inside the
+    # description; only the last line at the end is the boilerplate one.
     if (descriptionCnt > 0) {
 	if (list["description"][descriptionCnt - 1] ~ /^-+$/) {
 	    delete list["description"][descriptionCnt - 1]
