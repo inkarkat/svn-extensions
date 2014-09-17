@@ -21,15 +21,15 @@ esac
 [ $# -gt 0 ] || set -- .
 while [ $# -gt 0 ]
 do
-    dirspec=$1
+    filespec=$1
     shift
 
-    [ -d "${dirspec}/.svn" ] || {
-	echo >&2 "ERROR: '${dirspec}' is not a working copy"
+    [ -d "${filespec}/.svn" -o -d "$(dirname "$filespec")/.svn" ] || {
+	echo >&2 "ERROR: '${filespec}' is not a working copy"
 	exit 1
     }
     type -P svn >/dev/null 2>&1 || exit 1
-    'svn' info "$dirspec" 2>/dev/null | if [ "$isServer" ]; then
+    'svn' info "$filespec" 2>/dev/null | if [ "$isServer" ]; then
 	awk '
     BEGIN {
 	for (i = 0; i < 16; i++) {
@@ -69,7 +69,7 @@ do
     }
 '
     else
-	awk -v dirspec="$(readlink -nf "$dirspec")" '
+	awk -v filespec="$(readlink -nf "$filespec")" '
     BEGIN {
 	for (i = 0; i < 16; i++) {
 	    hexc[sprintf("%c", i + (i > 9 ? 55 : 48))] = i
@@ -137,7 +137,7 @@ do
 
     END {
 	repositoryPath = urldecode(substr(repositoryUrl, length(repositoryRoot) + 2))
-	print resolvePath(repositoryPath, dirspec)
+	print resolvePath(repositoryPath, filespec)
     }
 '
     fi
