@@ -12,13 +12,29 @@ pop:    Apply and the topmost stashed commit onto the working copy and remove it
 drop:   Remove a single stash.
 clear:  Throw away all stashes.
 create:	Just create a patch, but do not revert the working copy.
-Usage: "$(basename "$1")" [list|apply|pop|drop|clear|create|-n|--name NAME] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
+Usage: "$(basename "$1")" [list|apply|pop|drop|clear|create] [-n|--name NAME] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
 getLastPatch()
 {
-    cd "$stashDir" && ls -1t | head -n 1
+    case "$1" in
+	--name|-n)	shift
+			if [ ! "$1" ]; then
+			    echo >&2 "ERROR: Must pass patch file name"
+			    exit 2
+			elif [ -r "${stashDir}/${1}.patch" ]; then
+			    printf '%s/%s.patch' "$stashDir" "$1"; shift
+			elif [ -r "${stashDir}/${1}" ]; then
+			    printf '%s/%s' "$stashDir" "$1"; shift
+			else
+			    echo >&2 "ERROR: patch does not exist: ${stashDir}/$1"
+			    exit 2
+			fi
+			;;
+	'')		cd "$stashDir" && ls -1t | head -n 1;;
+	*)		exit 2;;
+    esac
 }
 
 apply()
@@ -34,34 +50,35 @@ cd "$rootdir" || exit $?
 readonly stashDir='.svn/stashes'
 
 typeset isRevert=t
-if [ $# -eq 1 ]; then
-    case $1 in
-	list)	cd "$stashDir" || exit $?
-		IFS=$'\n'
-		for file in $(ls -1rt)
-		do
-		    printf '%s\n' "$file"
-		    diffstat -C "$file"
-		done
-		exit $?
-		;;
-	apply)	lastPatchFile="${stashDir}/$(getLastPatch)"
-		apply "$lastPatchFile"
-		exit $?
-		;;
-	pop)	lastPatchFile="${stashDir}/$(getLastPatch)"
-		apply "$lastPatchFile" && rm "$lastPatchFile"
-		exit $?
-		;;
-	drop)	lastPatchFile="${stashDir}/$(getLastPatch)"
-		[ -e "$lastPatchFile" ] && rm -i "$lastPatchFile"
-		exit $?
-		;;
-	clear)	rm -ir "${stashDir}/"*
-		exit $?
-		;;
-    esac
-fi
+case $1 in
+    list)   cd "$stashDir" || exit $?
+	    IFS=$'\n'
+	    for file in $(ls -1rt)
+	    do
+		printf '%s\n' "$file"
+		diffstat -C "$file"
+	    done
+	    exit $?
+	    ;;
+    apply)  shift
+	    lastPatchFile=$(getLastPatch "$@") || exit $?
+	    apply "$lastPatchFile"
+	    exit $?
+	    ;;
+    pop)    shift
+	    lastPatchFile=$(getLastPatch "$@") || exit $?
+	    apply "$lastPatchFile" && rm "$lastPatchFile"
+	    exit $?
+	    ;;
+    drop)   shift
+	    lastPatchFile=$(getLastPatch "$@") || exit $?
+	    [ -e "$lastPatchFile" ] && rm -i "$lastPatchFile"
+	    exit $?
+	    ;;
+    clear)  rm -ir "${stashDir}/"*
+	    exit $?
+	    ;;
+esac
 
 typeset -a allargs=()
 typeset name="stash-$(date +%Y%m%d-%H%M%S)"
