@@ -32,7 +32,9 @@ getLastPatch()
 			    exit 2
 			fi
 			;;
-	'')		cd "$stashDir" && ls -1t | head -n 1;;
+	'')		printf '%s/' "$stashDir"
+			ls -1t "${stashDir}" | head -n 1
+			;;
 	*)		exit 2;;
     esac
 }
