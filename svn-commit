@@ -58,7 +58,7 @@ getCommittedFile()
 	committedFile=$lastArg
     else
 	# Get one commited file from the commit via svn status.
-	committedFile=$(svn status --non-interactive "${commonArguments[@]}" | sed -ne '/^[AMR].\{7\}\|^.M.\{6\}/{ s/^.\{8\}//p; q}') || exit $?
+	committedFile=$(svn status --non-interactive "${commonArguments[@]}"  2> >(grep -Fv 'Write error: Broken pipe') | sed -ne '/^[AMR].\{7\}\|^.M.\{6\}/{ s/^.\{8\}//p; q}') # Don't check for exit status because sed's "q" command causes an "svn: Write error: Broken pipe".
     fi
 }
 
