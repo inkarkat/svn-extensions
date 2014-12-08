@@ -10,7 +10,7 @@ committedFile=
 svnCommit()
 {
     getCommittedFile "$@"
-    if [ ! "$committedFile" -o ! -e "$committedFile" ]; then
+    if [ ! "$committedFile" ]; then
 	echo >&2 "ERROR: Could not find a file to commit; this is the status of the working copy:"
 	svn status --non-interactive "${commonArguments[@]}"
 	exit 1
@@ -59,6 +59,14 @@ getCommittedFile()
     else
 	# Get one commited file from the commit via svn status.
 	committedFile=$(svn status --non-interactive "${commonArguments[@]}"  2> >(grep -Fv 'Write error: Broken pipe') | sed -ne '/^[AMR].\{7\}\|^.M.\{6\}/{ s/^.\{8\}//p; q}') # Don't check for exit status because sed's "q" command causes an "svn: Write error: Broken pipe".
+	if [ ! "$committedFile" ]; then
+	    # We'd prefer to find an existing file, but if the commit contains
+	    # only deletions, take one of the changed directories that contains
+	    # a deleted file (as we need a still-existing file to retrieve the
+	    # revision).
+	    local deletedFile=$(svn status --non-interactive "${commonArguments[@]}"  2> >(grep -Fv 'Write error: Broken pipe') | sed -ne '/^D.\{7\}\|^.M.\{6\}/{ s/^.\{8\}//p; q}') # Don't check for exit status because sed's "q" command causes an "svn: Write error: Broken pipe".
+	    committedFile=$(dirname -- "$deletedFile")
+	fi
     fi
 }
 
