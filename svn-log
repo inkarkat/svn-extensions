@@ -216,6 +216,7 @@ case "$GREP_OPTIONS" in
 esac
 typeset authorArgs=
 typeset isServerRevisions=
+typeset -a serverArgs=
 
 typeset -a allargs=()
 while [ $# -gt 0 ]
@@ -233,13 +234,17 @@ do
 	--server)	shift; isServerRevisions='true';;
 	--xml)		isXmlOutput=t; allargs+=("$1");  shift;;
 	*)
-	    allargs+=("$1")
+	    if [ "$isServerRevisions" -a -d "$1" ]; then
+		serverArgs=("$1")
+	    else
+		allargs+=("$1")
+	    fi
 	    shift
 	    ;;
     esac
 done
 if [ "$isServerRevisions" ]; then
-    allargs+=($(svn-serverrevs))
+    allargs+=($(svn-serverrevs "${serverArgs[@]}"))
 fi
 if [ "$limit" ]; then
     if [ "$mergeFilter" = 'cat' -a "$grepFilter" = 'cat' ]; then
