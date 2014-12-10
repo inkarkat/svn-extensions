@@ -28,6 +28,7 @@ colorize()
 typeset filter=cat
 typeset isNoColor=
 typeset isServerRevisions=
+typeset -a serverArgs=
 typeset -a allargs=()
 while [ $# -gt 0 ]
 do
@@ -37,13 +38,17 @@ do
 	--no-color)	shift; isNoColor='true';;
 	--server)	shift; isServerRevisions='true';;
 	*)
-	    allargs+=("$1")
+	    if [ "$isServerRevisions" -a -d "$1" ]; then
+		serverArgs=("$1")
+	    else
+		allargs+=("$1")
+	    fi
 	    shift
 	    ;;
     esac
 done
 if [ "$isServerRevisions" ]; then
-    allargs+=($(svn-serverrevs))
+    allargs+=($(svn-serverrevs "${serverArgs[@]}"))
 fi
 
 set -o pipefail
