@@ -112,7 +112,7 @@ svnLog()
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_RESET:='[0m'}
 
-[ -t 2 ] && readonly isStderrToTerminal= || readonly isStderrToTerminal=
+[ -t 2 ] && readonly isStderrToTerminal=t || readonly isStderrToTerminal=
 limit=
 isReverse=
 isMergeFilter=
