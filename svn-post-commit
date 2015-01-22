@@ -103,7 +103,7 @@ EOF
     # commit). Later commits often just append to the description. Keep (single)
     # empty lines to maintain the structure.
     local IFS=$'\n'
-    typeset uniqueDescriptions=$(printf '%s\n' "${descriptions[*]}" | awk -e '/^$/{print}' -e '!x[$0]++' | cat -s)
+    typeset -a uniqueDescriptions=$(printf '%s\n' "${descriptions[*]}" | awk -e '/^$/{print}' -e '!x[$0]++' | cat -s)
     modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchName")
 
     if [ "$hasPreviousMentions" ]; then
@@ -113,7 +113,7 @@ TECHNICAL PROBLEM DESCRIPTION:
 $problemDescription
 
 SOLUTION:
-${uniqueDescriptions}
+${uniqueDescriptions[*]}
 
 MODIFIED FILES (repository, branch and revision; per release):
 ${modifiedFiles[*]}
