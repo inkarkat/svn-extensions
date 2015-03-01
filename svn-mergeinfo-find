@@ -4,7 +4,7 @@ printUsage()
 {
     cat <<HELPTEXT
 Show logs and diff of changes to svn:mergeinfo on passed PATH.
-Usage: "$(basename "$1")" [--grep REGEXP] [--author REGEXP] [-l|--limit ARG] [--no-color] PATH [-?|-h|--help]
+Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [-l|--limit ARG] [--no-color] PATH [-?|-h|--help]
 HELPTEXT
 }
 case "$1" in
