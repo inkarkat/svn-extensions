@@ -112,9 +112,6 @@ EOF
     if [ "$hasPreviousMentions" ]; then
 	echo "**** combined $defectId"
 	IFS=$'\n' output <<EOF
-TECHNICAL PROBLEM DESCRIPTION:
-$problemDescription
-
 SOLUTION:
 ${uniqueDescriptions}
 
