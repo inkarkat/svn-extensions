@@ -9,7 +9,7 @@ passedRevision=${1:?}; shift
 readonly committedFile=$1; shift
 mainRepoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Cannot determine the repository's root from $committedFile"
 #****D echo "**** post-commit hook for $passedRevision on $committedFile"
-printf > ~/.svn-post-commit_last '%s %s' "$passedRevision" "$committedFile" # Store for recall by svn-post-commit-repeat.
+
 
 
 extractTaskId()
@@ -70,7 +70,7 @@ searchForPreviousMentions()
 	logRevision=${logLine%% *}
 	[ "${logRevision#r}" = "${revision#r}" ] && continue
 	echo "**** $logRevision"
-	if [ ! "$hasPreviousMentions" ] && [ "$revision" ]; then
+	if [ ! "$hasPreviousMentions" ]; then
 	    descriptions+=("(r${revision#r})")
 	fi
 	hasPreviousMentions=t
@@ -162,6 +162,7 @@ searchAllReposForPreviousMentions()
 	esac
 
 	# These are only applicable to the main repository; clear them.
+	revision=
 	passedRevision=
 
 	getRepoInformation "$otherRepoRoot"
