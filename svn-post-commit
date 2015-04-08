@@ -8,6 +8,7 @@ set -o pipefail
 passedRevision=${1:?}; shift
 readonly committedFile=$1; shift
 mainRepoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Cannot determine the repository's root from $committedFile"
+typeset -a fixedVersions
 #****D echo "**** post-commit hook for $passedRevision on $committedFile"
 printf > ~/.svn-post-commit_last '%s %s' "$passedRevision" "$committedFile" # Store for recall by svn-post-commit-repeat.
 
@@ -22,11 +23,12 @@ extractDefectId()
 }
 getRepoInformation()
 {
-    repoRoot=${1:?}
+    local repoRoot=${1:?}
+    local revision=$2
     branchFullName=$(svn-branchname "$repoRoot")
     branchName=${branchFullName##*/}
 
-    eval "$(svn info --non-interactive ${passedRevision:+-r "$passedRevision"} "$repoRoot" | svn-parse-info)"
+    eval "$(svn info --non-interactive ${revision:+-r "$revision"} "$repoRoot" | svn-parse-info)"
 
     RepositoryName=${RepositoryRoot##*/}
     nonDefaultRepository=
@@ -37,15 +39,17 @@ getRepoInformation()
 }
 getFullRepoInformation()
 {
-    repoRoot=${1:?}
-    getRepoInformation "$repoRoot"
+    local repoRoot=${1:?}
+    local revision=$2
+    local IFS=$' \t\n'
+    getRepoInformation "$@"
     case "$repository" in
 	hpsw-opr-core)		defaultAffected=opr-web.war;;
 	hpsw-opr-config)	defaultAffected=opr-config-server.war;;
 	*)			defaultAffected=;;
     esac
 
-    readonly fixedVersion=$(opr-version --server ${passedRevision:+-r "$passedRevision"} "$repoRoot")
+    fixedVersions+=("$(opr-version --server ${revision:+-r "$revision"} "$repoRoot")")
 }
 getInterestingCommitSummary()
 {
@@ -61,16 +65,16 @@ searchForPreviousMentions()
 {
     repoRoot=${1:?}
     defectId=${2:?}
+    revisions=$3
     hasPreviousMentions=
     laterSummary=$summary
-    revisions=$revision
     [ "$isStderrToTerminal" ] && printf >&2 "\\n**** Searching pending and ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+last }${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:-past} commits in ${RepositoryName} for previous mentions of %s in the summary...\\n" "$defectId"
     while read -r logLine
     do
 	logRevision=${logLine%% *}
 	[ "${logRevision#r}" = "${revision#r}" ] && continue
 	echo "**** $logRevision"
-	if [ ! "$hasPreviousMentions" ]; then
+	if [ ! "$hasPreviousMentions" ] && [ "$revision" ]; then
 	    descriptions+=("(r${revision#r})")
 	fi
 	hasPreviousMentions=t
@@ -110,6 +114,11 @@ EOF
     modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchName")
 
     if [ "$hasPreviousMentions" ]; then
+	highestRevision=${revisions##*, }
+	highestRevision=${highestRevision#r}
+	getFullRepoInformation "$repoRoot" "$highestRevision"
+	highestFixedVersion=$(echo "${fixedVersions[*]}" | sort -n | tail -n 1)
+
 	echo "**** combined $defectId"
 	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
@@ -127,7 +136,7 @@ $defaultAffected
 DOCUMENTATION CHANGE:
 
 FIXED FOR VERSION:
-$fixedVersion
+$highestFixedVersion
 EOF
     else
 	echo "**** none found."
@@ -146,13 +155,17 @@ output()
 searchAllReposForPreviousMentions()
 {
     typeset -a descriptions=("${description[@]}")
-    searchForPreviousMentions "$mainRepoRoot" "$defectId"
+    searchForPreviousMentions "$mainRepoRoot" "$defectId" "$revision"
 
     # I would have preferred Bash's associative arrays, but these cannot be
     # exported.
     currentRepoRoot=$(svn-root 2>/dev/null || printf %s "$mainRepoRoot")
     readonly otherRepoConfig="${currentRepoRoot}/.svn/commit-mentions-repo-paths"
     [ -r "$otherRepoConfig" ] || return 0
+
+    # Now that other repositories are involved, also mention the original one in
+    # the revision entries for that one.
+    modifiedFiles=("${modifiedFiles[@]// on / on ${repository}\'s }")
 
     while IFS=$'\n' read -r otherRepoRoot
     do
@@ -162,11 +175,10 @@ searchAllReposForPreviousMentions()
 	esac
 
 	# These are only applicable to the main repository; clear them.
-	revision=
 	passedRevision=
 
 	getRepoInformation "$otherRepoRoot"
-	searchForPreviousMentions "$otherRepoRoot" "$defectId"
+	searchForPreviousMentions "$otherRepoRoot" "$defectId" ""
     done < "$otherRepoConfig"
 }
 
@@ -177,20 +189,20 @@ case "$summary" in
     Merge\ of\ QCCR*)
 	extractDefectId
 echo "**** Merge of $defectId"
-	getFullRepoInformation "$mainRepoRoot"
+	getFullRepoInformation "$mainRepoRoot" "$passedRevision"
 
 	output <<EOF
 MODIFIED FILES (repository, branch and revision; per release):
 $revision on ${nonDefaultRepository}$branchName
 
 FIXED FOR VERSION:
-$fixedVersion
+${fixedVersions[*]}
 EOF
 	;;
     *QCCR*)
 	extractDefectId
 echo "**** $defectId"
-	getFullRepoInformation "$mainRepoRoot"
+	getFullRepoInformation "$mainRepoRoot" "$passedRevision"
 
 	problemDescription=$(sed -n -e '/^TECHNICAL PROBLEM DESCRIPTION/{ N; s/^[^\n]*\n//; p }' ~/.vim/templates/cr_resolution.txt)
 	interestingCommitSummary=$(getInterestingCommitSummary)
@@ -210,7 +222,7 @@ $defaultAffected
 DOCUMENTATION CHANGE:
 
 FIXED FOR VERSION:
-$fixedVersion
+${fixedVersions[*]}
 EOF
 	searchAllReposForPreviousMentions
 	;;
