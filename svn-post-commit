@@ -9,7 +9,7 @@ passedRevision=${1:?}; shift
 readonly committedFile=$1; shift
 mainRepoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Cannot determine the repository's root from $committedFile"
 #****D echo "**** post-commit hook for $passedRevision on $committedFile"
-
+printf > ~/.svn-post-commit_last '%s %s' "$passedRevision" "$committedFile" # Store for recall by svn-post-commit-repeat.
 
 
 extractTaskId()
@@ -112,6 +112,9 @@ EOF
     if [ "$hasPreviousMentions" ]; then
 	echo "**** combined $defectId"
 	IFS=$'\n' output <<EOF
+TECHNICAL PROBLEM DESCRIPTION:
+$problemDescription
+
 SOLUTION:
 ${uniqueDescriptions}
 
