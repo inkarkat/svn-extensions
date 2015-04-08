@@ -23,12 +23,11 @@ extractDefectId()
 }
 getRepoInformation()
 {
-    local repoRoot=${1:?}
-    local revision=$2
+    repoRoot=${1:?}
     branchFullName=$(svn-branchname "$repoRoot")
     branchName=${branchFullName##*/}
 
-    eval "$(svn info --non-interactive ${revision:+-r "$revision"} "$repoRoot" | svn-parse-info)"
+    eval "$(svn info --non-interactive ${passedRevision:+-r "$passedRevision"} "$repoRoot" | svn-parse-info)"
 
     RepositoryName=${RepositoryRoot##*/}
     nonDefaultRepository=
@@ -39,17 +38,15 @@ getRepoInformation()
 }
 getFullRepoInformation()
 {
-    local repoRoot=${1:?}
-    local revision=$2
-    local IFS=$' \t\n'
-    getRepoInformation "$@"
+    repoRoot=${1:?}
+    getRepoInformation "$repoRoot"
     case "$repository" in
 	hpsw-opr-core)		defaultAffected=opr-web.war;;
 	hpsw-opr-config)	defaultAffected=opr-config-server.war;;
 	*)			defaultAffected=;;
     esac
 
-    fixedVersions+=("$(opr-version --server ${revision:+-r "$revision"} "$repoRoot")")
+    fixedVersions=("$(opr-version --server ${passedRevision:+-r "$passedRevision"} "$repoRoot")")
 }
 getInterestingCommitSummary()
 {
@@ -114,9 +111,11 @@ EOF
     modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchName")
 
     if [ "$hasPreviousMentions" ]; then
+	local IFS=$' \t\n'
 	highestRevision=${revisions##*, }
 	highestRevision=${highestRevision#r}
-	getFullRepoInformation "$repoRoot" "$highestRevision"
+	fixedVersions+=("$(opr-version --server ${highestRevision:+-r "$highestRevision"} "$repoRoot")")
+	local IFS=$'\n'
 	highestFixedVersion=$(echo "${fixedVersions[*]}" | sort -n | tail -n 1)
 
 	echo "**** combined $defectId"
@@ -189,7 +188,7 @@ case "$summary" in
     Merge\ of\ QCCR*)
 	extractDefectId
 echo "**** Merge of $defectId"
-	getFullRepoInformation "$mainRepoRoot" "$passedRevision"
+	getFullRepoInformation "$mainRepoRoot"
 
 	output <<EOF
 MODIFIED FILES (repository, branch and revision; per release):
@@ -202,7 +201,7 @@ EOF
     *QCCR*)
 	extractDefectId
 echo "**** $defectId"
-	getFullRepoInformation "$mainRepoRoot" "$passedRevision"
+	getFullRepoInformation "$mainRepoRoot"
 
 	problemDescription=$(sed -n -e '/^TECHNICAL PROBLEM DESCRIPTION/{ N; s/^[^\n]*\n//; p }' ~/.vim/templates/cr_resolution.txt)
 	interestingCommitSummary=$(getInterestingCommitSummary)
