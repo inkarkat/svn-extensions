@@ -8,7 +8,6 @@ set -o pipefail
 passedRevision=${1:?}; shift
 readonly committedFile=$1; shift
 mainRepoRoot=$(svn-root "$(dirname "$committedFile")") || echo >&2 "Warning: Cannot determine the repository's root from $committedFile"
-typeset -a fixedVersions
 #****D echo "**** post-commit hook for $passedRevision on $committedFile"
 printf > ~/.svn-post-commit_last '%s %s' "$passedRevision" "$committedFile" # Store for recall by svn-post-commit-repeat.
 
@@ -46,7 +45,7 @@ getFullRepoInformation()
 	*)			defaultAffected=;;
     esac
 
-    fixedVersions=("$(opr-version --server ${passedRevision:+-r "$passedRevision"} "$repoRoot")")
+    readonly fixedVersion=$(opr-version --server ${passedRevision:+-r "$passedRevision"} "$repoRoot")
 }
 getInterestingCommitSummary()
 {
@@ -62,9 +61,9 @@ searchForPreviousMentions()
 {
     repoRoot=${1:?}
     defectId=${2:?}
-    revisions=$3
     hasPreviousMentions=
     laterSummary=$summary
+    revisions=$revision
     [ "$isStderrToTerminal" ] && printf >&2 "\\n**** Searching pending and ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+last }${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:-past} commits in ${RepositoryName} for previous mentions of %s in the summary...\\n" "$defectId"
     while read -r logLine
     do
@@ -111,13 +110,6 @@ EOF
     modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchName")
 
     if [ "$hasPreviousMentions" ]; then
-	local IFS=$' \t\n'
-	highestRevision=${revisions##*, }
-	highestRevision=${highestRevision#r}
-	fixedVersions+=("$(opr-version --server ${highestRevision:+-r "$highestRevision"} "$repoRoot")")
-	local IFS=$'\n'
-	highestFixedVersion=$(echo "${fixedVersions[*]}" | sort -n | tail -n 1)
-
 	echo "**** combined $defectId"
 	IFS=$'\n' output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
@@ -135,7 +127,7 @@ $defaultAffected
 DOCUMENTATION CHANGE:
 
 FIXED FOR VERSION:
-$highestFixedVersion
+$fixedVersion
 EOF
     else
 	echo "**** none found."
@@ -154,17 +146,13 @@ output()
 searchAllReposForPreviousMentions()
 {
     typeset -a descriptions=("${description[@]}")
-    searchForPreviousMentions "$mainRepoRoot" "$defectId" "$revision"
+    searchForPreviousMentions "$mainRepoRoot" "$defectId"
 
     # I would have preferred Bash's associative arrays, but these cannot be
     # exported.
     currentRepoRoot=$(svn-root 2>/dev/null || printf %s "$mainRepoRoot")
     readonly otherRepoConfig="${currentRepoRoot}/.svn/commit-mentions-repo-paths"
     [ -r "$otherRepoConfig" ] || return 0
-
-    # Now that other repositories are involved, also mention the original one in
-    # the revision entries for that one.
-    modifiedFiles=("${modifiedFiles[@]// on / on ${repository}\'s }")
 
     while IFS=$'\n' read -r otherRepoRoot
     do
@@ -177,7 +165,7 @@ searchAllReposForPreviousMentions()
 	passedRevision=
 
 	getRepoInformation "$otherRepoRoot"
-	searchForPreviousMentions "$otherRepoRoot" "$defectId" ""
+	searchForPreviousMentions "$otherRepoRoot" "$defectId"
     done < "$otherRepoConfig"
 }
 
@@ -195,7 +183,7 @@ MODIFIED FILES (repository, branch and revision; per release):
 $revision on ${nonDefaultRepository}$branchName
 
 FIXED FOR VERSION:
-${fixedVersions[*]}
+$fixedVersion
 EOF
 	;;
     *QCCR*)
@@ -221,7 +209,7 @@ $defaultAffected
 DOCUMENTATION CHANGE:
 
 FIXED FOR VERSION:
-${fixedVersions[*]}
+$fixedVersion
 EOF
 	searchAllReposForPreviousMentions
 	;;
