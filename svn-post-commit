@@ -99,8 +99,7 @@ searchForPreviousMentions()
 	    laterSummary=
 	fi
 
-	local IFS=$'\n'
-	cat <<EOF
+	IFS=$'\n' cat <<EOF
 SOLUTION:
 ${interestingCommitSummary% }${description[*]}
 
