@@ -163,6 +163,10 @@ searchAllReposForPreviousMentions()
     readonly otherRepoConfig="${currentRepoRoot}/.svn/commit-mentions-repo-paths"
     [ -r "$otherRepoConfig" ] || return 0
 
+    # Now that other repositories are involved, also mention the original one in
+    # the revision entries for that one.
+    modifiedFiles=("${modifiedFiles[@]// on / on ${repository}\'s }")
+
     while IFS=$'\n' read -r otherRepoRoot
     do
 	case "$otherRepoRoot" in
@@ -174,14 +178,6 @@ searchAllReposForPreviousMentions()
 	passedRevision=
 
 	getRepoInformation "$otherRepoRoot"
-
-	if [ "$nonDefaultRepository" -a ! "$didMentionOriginalRepository" ]; then
-	    didMentionOriginalRepository=t
-	    # Now that other repositories are involved, also mention the
-	    # original one in the revision entries for that one.
-	    modifiedFiles=("${modifiedFiles[@]// on / on ${repository}\'s }")
-	fi
-
 	searchForPreviousMentions "$otherRepoRoot" "$defectId" ""
     done < "$otherRepoConfig"
 }
