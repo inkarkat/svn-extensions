@@ -99,7 +99,8 @@ searchForPreviousMentions()
 	    laterSummary=
 	fi
 
-	IFS=$'\n' cat <<EOF
+	local IFS=$'\n'
+	cat <<EOF
 SOLUTION:
 ${interestingCommitSummary% }${description[*]}
 
@@ -120,7 +121,8 @@ EOF
 	highestFixedVersion=$(echo "${fixedVersions[*]}" | sort -n | tail -n 1)
 
 	echo "**** combined $defectId"
-	IFS=$'\n' output <<EOF
+	IFS=$'\n'
+	output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
 $problemDescription
 
@@ -163,10 +165,6 @@ searchAllReposForPreviousMentions()
     readonly otherRepoConfig="${currentRepoRoot}/.svn/commit-mentions-repo-paths"
     [ -r "$otherRepoConfig" ] || return 0
 
-    # Now that other repositories are involved, also mention the original one in
-    # the revision entries for that one.
-    modifiedFiles=("${modifiedFiles[@]// on / on ${repository}\'s }")
-
     while IFS=$'\n' read -r otherRepoRoot
     do
 	case "$otherRepoRoot" in
@@ -178,6 +176,14 @@ searchAllReposForPreviousMentions()
 	passedRevision=
 
 	getRepoInformation "$otherRepoRoot"
+
+	if [ "$nonDefaultRepository" -a ! "$didMentionOriginalRepository" ]; then
+	    didMentionOriginalRepository=t
+	    # Now that other repositories are involved, also mention the
+	    # original one in the revision entries for that one.
+	    modifiedFiles=("${modifiedFiles[@]// on / on ${repository}\'s }")
+	fi
+
 	searchForPreviousMentions "$otherRepoRoot" "$defectId" ""
     done < "$otherRepoConfig"
 }
@@ -185,12 +191,15 @@ searchAllReposForPreviousMentions()
 parsedLogEntry="$(svn log --non-interactive -v ${passedRevision:+-r "$passedRevision"} "$mainRepoRoot" | svn-parse-logentry)" || exit $?
 eval "$parsedLogEntry"
 
+
+
 case "$summary" in
     Merge\ of\ QCCR*)
 	extractDefectId
 echo "**** Merge of $defectId"
 	getFullRepoInformation "$mainRepoRoot" "$passedRevision"
 
+	IFS=$'\n'
 	output <<EOF
 MODIFIED FILES (repository, branch and revision; per release):
 $revision on ${nonDefaultRepository}$branchName
@@ -198,8 +207,10 @@ $revision on ${nonDefaultRepository}$branchName
 FIXED FOR VERSION:
 ${fixedVersions[*]}
 EOF
-	searchAllReposForPreviousMentions
 	;;
+
+
+
     *QCCR*)
 	extractDefectId
 echo "**** $defectId"
@@ -207,7 +218,8 @@ echo "**** $defectId"
 
 	problemDescription=$(sed -n -e '/^TECHNICAL PROBLEM DESCRIPTION/{ N; s/^[^\n]*\n//; p }' ~/.vim/templates/cr_resolution.txt)
 	interestingCommitSummary=$(getInterestingCommitSummary)
-	IFS=$'\n' output <<EOF
+	IFS=$'\n'
+	output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
 $problemDescription
 
@@ -234,6 +246,9 @@ echo "**** This is task $taskId"
 ${revision}: ${summary#$taskId: }
 EOF
 	;;
+
+
+
     *)
 echo "**** This is no CR."
 	readonly branchFullName=$(svn-branchname "$mainRepoRoot")
