@@ -79,7 +79,7 @@ showNoMatch()
     # the processing progresses.
     # Note: Print trailing space to clear previous status when the number of
     # digits in the revision decreases.
-    [ "$1" ] && printf >&2 '%s\r' "${1} "
+    [ -t 1 -a "$1" ] && printf >&2 '%s\r' "${1} "
 }
 clearNoMatch()
 {
@@ -87,7 +87,7 @@ clearNoMatch()
     # This is no problem with "less", because it redraws the entire terminal,
     # but it leaves the remainder of the status, e.g. when piping the log output
     # into "svn revisions", making copy-and-paste cumbersome.
-    printf >&2 '                    \r'
+    [ -t 1 ] && printf >&2 '                    \r'
 }
 isFirstLog=t
 processRevision()
