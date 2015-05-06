@@ -3,11 +3,11 @@
 printUsage()
 {
     cat <<HELPTEXT
-Show log grouped by name and sorted by the number of their commits. 
---no-merge	Exclude any commits that mention merge in the revision summary. 
---no-color	Turn off color highlighting. 
--s|--summary	Show author names sorted by the number of their commits only. 
-Note: svn log option -v is not supported here, but also doesn't make sense here. 
+Show log grouped by name and sorted by the number of their commits.
+--no-merge	Exclude any commits that mention merge in the revision summary.
+--no-color	Turn off color highlighting.
+-s|--summary	Show author names sorted by the number of their commits only.
+Note: svn log option -v is not supported here, but also doesn't make sense here.
 Usage: "$(basename "$1")" [--no-merge] [-s|--summary] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
@@ -45,6 +45,7 @@ do
     esac
 done
 
+set -o pipefail
 svn log --non-interactive "${allargs[@]}" | sed --unbuffered -ne '
 /^r[0-9]\+/{
     s/\(^r[0-9]\+\) *| *\([^ |]\+\) *| *[^ |]\+[^|]*|.*/\2 | \1 | /
@@ -71,7 +72,7 @@ END {
     # by index. Since that is not a one-to-one mapping, we add the highest
     # revision number to the key to make it unique. This also makes the
     # (reverse-sorted) output print the author with the highest revision number
-    # first when multiple authors have the same commit count. 
+    # first when multiple authors have the same commit count.
     for (i in commitCount) {
 	flipped[sprintf("%04d %s", commitCount[i], highestRev[i])] = i
     }
