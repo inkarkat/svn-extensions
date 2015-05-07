@@ -64,8 +64,8 @@ getCommittedFile()
 	    # only deletions, take one of the changed directories that contains
 	    # a deleted file (as we need a still-existing file to retrieve the
 	    # revision).
-	    local deletedFile=$(svn status --non-interactive "${commonArguments[@]}"  2> >(grep -Fv 'Write error: Broken pipe') | sed -ne '/^D.\{7\}\|^.M.\{6\}/{ s/^.\{8\}//p; q}') # Don't check for exit status because sed's "q" command causes an "svn: Write error: Broken pipe".
-	    committedFile=$(dirname -- "$deletedFile")
+	    local deletedFile=$(svn status --non-interactive "${commonArguments[@]}"  2> >(grep -Fv 'Write error: Broken pipe') | sed -ne '/^D.\{7\}/{ s/^.\{8\}//p; q}') # Don't check for exit status because sed's "q" command causes an "svn: Write error: Broken pipe".
+	    [ "$deletedFile" ] && committedFile=$(dirname -- "$deletedFile") || committedFile=
 	fi
     fi
 }
