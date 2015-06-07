@@ -40,9 +40,9 @@ getRepoInformation()
 }
 getFullRepoInformation()
 {
+    local IFS=$' \t\n'
     local repoRoot=${1:?}
     local revision=$2
-    local IFS=$' \t\n'
     getRepoInformation "$@"
     case "$RepositoryName" in
 	hpsw-opr-core)		defaultAffected+=(opr-web.war);;
@@ -63,6 +63,7 @@ getInterestingCommitSummary()
 typeset -a modifiedFiles
 searchForPreviousMentions()
 {
+    local IFS=$' \t\n'
     repoRoot=${1:?}
     defectId=${2:?}
     revisions=$3
@@ -105,7 +106,7 @@ SOLUTION:
 ${interestingCommitSummary% }${description[*]}
 
 EOF
-    done < <((svn-lg --non-interactive --no-color --no-list-author --no-list-date --server "$repoRoot"; svn-lg --non-interactive --no-color --no-list-author --no-list-date ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep "^r[0-9]\+ \([^[:space:]]\+: \)*${defectId}: ")
+    done < <((svn-lg --non-interactive --no-color --no-list-author --no-list-date --server "$repoRoot"; svn-lg --non-interactive --no-color --no-list-author --no-list-date ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep "^r[0-9]\+ \([^[:space:]]\+: \)*\(Merge of \)\?${defectId}: ")
 
     # Remove duplicate description lines; keep the first one (from the oldest
     # commit). Later commits often just append to the description. Keep (single)
@@ -121,7 +122,7 @@ EOF
 	highestFixedVersion=$(echo "${fixedVersions[*]}" | sort -n | tail -n 1)
 
 	echo "**** combined $defectId"
-	IFS=$'\n'
+	local IFS=$'\n'
 	output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
 $problemDescription
