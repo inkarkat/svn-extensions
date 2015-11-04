@@ -1,0 +1,4 @@
+#!/bin/sh
+
+describe=$(svn-describe "$@" 2>/dev/null || printf '???')
+printf '%s_%s_%s\n' "$HOSTNAME" "$describe" "$(date '+%d-%b-%Y_%H:%M')"
