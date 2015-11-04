@@ -3,8 +3,9 @@
 printUsage()
 {
     cat <<HELPTEXT
-Internal helper script.
-Usage: "$(basename "$1")"
+Internal helper script. Prints the revision arguments representing all server
+revisions that are not yet in the working copy.
+Usage: "$(basename "$1") [PATH]"
 HELPTEXT
 }
 
