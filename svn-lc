@@ -128,6 +128,7 @@ nonRecursivePathsFilter=cat
 isDiff=t
 isLog=t
 typeset -a allargs=()
+typeset -a diffargs=()
 typeset -a verboseArgs=()
 typeset -a colorargs=()
 typeset isServerRevisions=
@@ -159,6 +160,8 @@ do
 			;;
 	--no-diff)	shift; isDiff=;;
 	--no-log)	shift; isLog=;;
+	-b|--ignore-space-change|-w|--ignore-all-space|--ignore-eol-style|-p|--show-c-function|--stat|--numstat|--shortstat)
+			diffargs+=("$1"); shift;;
 	*)
 	    if [ "$isServerRevisions" -a -d "$1" ]; then
 		serverArgs=("$1")
@@ -254,7 +257,7 @@ do
 	esac
 	[ "$propFilterPropertyNamePattern" ] && typeset -a propFilterArg=('--filter' "$propFilterPropertyNamePattern") || typeset -a propFilterArg=()
 
-	diffContents=$(svn-dp --no-color --change "$revision" "${allargs[@]}" | svn-propfilter --no-color $filterArg --scope $filterScope "${propFilterArg[@]}")
+	diffContents=$(svn-dp --no-color --change "$revision" "${diffargs[@]}" "${allargs[@]}" | svn-propfilter --no-color $filterArg --scope $filterScope "${propFilterArg[@]}")
 
 	if [ "$diffContents" ]; then
 	    # Alright, we have a diff to show, now get the log entry first.
@@ -287,7 +290,7 @@ do
 	    if [ "$isLog" ]; then
 		echo
 	    fi
-	    svn-dp --change "$revision" "${colorargs[@]}" "${allargs[@]}"
+	    svn-dp --change "$revision" "${colorargs[@]}" "${diffargs[@]}" "${allargs[@]}"
 	fi
 
 	let revisionCnt+=1
