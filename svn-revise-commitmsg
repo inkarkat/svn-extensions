@@ -1,14 +1,37 @@
-#!/bin/sh
+#!/bin/bash
+
+shopt -qs extglob
 
 printUsage()
 {
     cat <<HELPTEXT
 Edit the commit message of the passed revision and update it.
-Usage: "$(basename "$1")" -r REV [TARGET] [-?|-h|--help]
+Usage: "$(basename "$1")" [[-r|--revision] REV [[-r|--revision] REV ...]] [TARGET] [-?|-h|--help]
 HELPTEXT
 }
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-esac
 
-svn propedit svn:log --revprop "$@"
+typeset -a allargs=()
+typeset -a revisions=()
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--change|-c)	shift; revisions+=("$1"); shift;;
+	--revision|-r)	shift; revisions+=("$1"); shift;;
+	?(r)+([0-9]))	       revisions+=("${1#r}"); shift;;
+	*)
+	    allargs+=("$1")
+	    shift
+	    ;;
+    esac
+done
+
+set -o pipefail
+if [ ${#revisions[@]} -eq 0 ]; then
+    echo >&2 "ERROR: Must specify REV."; printUsage "$0"; exit 1
+else
+    for revision in "${revisions[@]}"
+    do
+	svn propedit svn:log --revprop --revision "$revision" "${allargs[@]}" || exit $?
+    done
+fi
