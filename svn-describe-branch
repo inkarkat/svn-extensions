@@ -12,6 +12,6 @@ case "$1" in
 esac
 
 set -o pipefail
-branch=$(svn-branch "$@") || exit $?
+branch=$(svn-branchname "$@") || exit $?
 describe=$(svn-describe "$@") || exit $?
 printf '%s-%s\n' "$branch" "$describe"
