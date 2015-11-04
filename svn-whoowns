@@ -4,7 +4,7 @@ printUsage()
 {
     cat <<HELPTEXT
 Show statistics on how many lines were last committed by which author.
-Usage: "$(basename "$1")" [-r N[:M]] TARGET[@REV] [-?|-h|--help]
+Usage: "$(basename "$1")" [-r N[:M]] [-g|--use-merge-history] TARGET[@REV] [-?|-h|--help]
 HELPTEXT
 }
 
