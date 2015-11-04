@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-Put single files under version control, without recursing into subdirs. 
+Put single files under version control, without recursing into subdirs.
 Usage: "$(basename "$1")" [-?|-h|--help] PATH...
 HELPTEXT
 }
@@ -18,11 +18,11 @@ do
 	dirspec=$(dirname -- "$filespec")
 	if svn status --non-interactive "$dirspec" | grep -q '^\?' > /dev/null; then
 	    # The directory of the file to be added is not yet under version
-	    # control; add it first. 
-	    svn add --non-interactive --non-recursive "$dirspec" || { status=1; continue; }
+	    # control; add it first.
+	    svn-wrapper add --non-interactive --non-recursive "$dirspec" || { status=1; continue; }
 	fi
     fi
 
-    svn add --non-interactive --non-recursive "$filespec" || { status=1; continue; }
+    svn-wrapper add --non-interactive --non-recursive "$filespec" || { status=1; continue; }
 done
 exit $status
