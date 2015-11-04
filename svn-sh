@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-Enter a bunch of svn commands interactively. 
+Enter a bunch of svn commands interactively.
 Usage: "$(basename "$1")" [-?|-h|--help]
 HELPTEXT
 }
@@ -13,10 +13,9 @@ esac
 
 while read -p "svn> " line; do
     if [ "x$line" != "xexit" ]; then
-	svn $line;
+	svn $line
     else
-	echo "bye";
-	break;
-    fi;
+	echo "bye"
+	break
+    fi
 done
-
