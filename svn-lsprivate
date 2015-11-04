@@ -4,25 +4,24 @@ printUsage()
 {
     cat <<HELPTEXT
 List unversioned files. Show a summary for unversioned directories
-or with -l the entire subdir contents.
+or with -l|--long-format the entire subdir contents.
 With -x|--no-ignore also ignored files.
-Usage: "$(basename "$1")" [-l] [-x|--no-ignore] [PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [-l|--long-format] [-x|--no-ignore] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-esac
 
 isLongFormat=
-if [ "$1" = "-l" ]; then
-    isLongFormat='true'
-    shift
-fi
 additionalArgs=
-if [ "$1" = "-x" ]; then
-    additionalArgs="${additionalArgs}${additionalArgs:+ }--no-ignore"
-    shift
-fi
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	    shift; printUsage "$0"; exit 0;;
+	--long-format|-l)   shift; isLongFormat=t;;
+	--no-ignore|-x)	    shift; additionalArgs="${additionalArgs}${additionalArgs:+ }--no-ignore";;
+	*)		    break;;
+    esac
+done
+
 
 set -o pipefail
 svn status --non-interactive $additionalArgs "$@" | grep '^[?I]' | cut -c 9- | while read filespec
