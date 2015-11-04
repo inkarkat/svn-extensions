@@ -100,7 +100,7 @@ done
 [ -w "$stashDir" ] || { echo >&2 "Cannot write to stashes directory: ${PWD%/}/$stashDir"; exit 1; }
 
 readonly stashFilespec="${stashDir}/${name}.patch"
-svn-diff --no-color "${allargs[@]}" > "$stashFilespec" || exit $?
+svn-diff --no-color --patch-compatible "${allargs[@]}" > "$stashFilespec" || exit $?
 diffstat -C "$stashFilespec"
 if [ "$isRevert" ]; then
     if [ ${#allargs[@]} -eq 0 ]; then
