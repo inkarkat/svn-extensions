@@ -92,9 +92,9 @@ clearNoMatch()
 isFirstLog=t
 processRevision()
 {
-    IFS=' ' read -r revision action copyFromPath < <(printf '%s\n' "$1" | \
+    IFS=' ' read -r revision action path copyFromPath < <(printf '%s\n' "$1" | \
 	xmlstarlet sel --text -t \
-	    -m "/logentry/paths/path[contains('AR', @action)]" -i ". = '$serverFilespec'" -v "concat(../../@revision, ' ', @action, ' ', @copyfrom-path)" \
+	    -m "/logentry/paths/path[contains('AR', @action)]" -i "starts-with('${serverFilespec}/', concat(., '/'))" -v "concat(../../@revision, ' ', @action, ' ', ., ' ', @copyfrom-path)" \
 	    -n)
 
     if [ "$revision" ]; then
@@ -106,12 +106,17 @@ processRevision()
 	fi
 
 	if [ "$copyFromPath" ]; then
+	    # The copy may have occurred higher up in the directory hierarchy;
+	    # replace that front part of the path that changed, but keep any
+	    # common subtree.
+	    previousServerFilespec=${copyFromPath}${serverFilespec:${#path}}
+
 	    if [ "$action" = "R" ]; then
 		printRename "$serverFilespec"
 	    else
-		printCopy "$copyFromPath" "$serverFilespec"
+		printCopy "$previousServerFilespec" "$serverFilespec"
 	    fi
-	    serverFilespec=$copyFromPath
+	    serverFilespec=$previousServerFilespec
 	else
 	    printAddition "$serverFilespec"
 	fi
