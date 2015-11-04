@@ -1,0 +1,10 @@
+#!/bin/bash
+
+readonly dataFile=~/.svn-post-commit_last
+
+[ -r "$dataFile" ] || { echo >&2 "ERROR: No previous commit data available in \"$dataFile\""; exit 1; }
+
+IFS=' ' read revision committedFile < "$dataFile"
+[ "$revision" ] || { echo >&2 "ERROR: No previous revision available from \"$dataFile\""; exit 1; }
+
+exec svn-post-commit "$revision" "$committedFile"
