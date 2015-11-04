@@ -1,0 +1,24 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Apply a patch to the root dir of this working copy.
+Usage: "$(basename "$1")" patchfile [...] [-?|-h|--help]
+HELPTEXT
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+set -o pipefail
+[ $# -gt 0 ] || { printUsage "$0"; exit 1; }
+rootdir=$(svn-root) || exit $?
+cd "$rootdir" || exit $?
+
+status=0
+for filespec
+do
+    patch $SVN_APPLYR_PATCH_OPTIONS -p0 -i "$filespec" || status=1
+done
+exit $status
