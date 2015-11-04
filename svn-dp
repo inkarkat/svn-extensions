@@ -18,6 +18,9 @@ HELPTEXT
 
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_RESET:='[0m'}
+# Highlight diff output if available.
+hasColorDiff=
+type -t colordiff >/dev/null && hasColorDiff=t
 isColor=t
 typeset -a allargs=()
 diffStatArgs=
@@ -32,6 +35,7 @@ do
 			allargs+=("$1")	# Pass option along to my svn diff wrapper.
 			shift
 			isColor=
+			hasColorDiff=
 			# And clear all colors used here.
 			for color in ${!COLOR_@}; do
 			    unset $color
@@ -64,6 +68,22 @@ do
 done
 [ "$isColor" ] || diffStatArgs=${diffStatArgs//-C/}
 
+diffInitialVersion()
+{
+    revision=$1
+    shift
+    # This works only if we have passed file(s).
+    for filespec
+    do
+	[ "$filespec" ] || continue
+	# Check for nonexistence of that file in revisions before the passed
+	# revision by trying to get the info; I hope this is faster that svn
+	# cat.
+	svn info --non-interactive --revision "$((revision - 1))" "$filespec" >/dev/null 2>&1 && continue
+	diff -u /dev/null <(svn cat --non-interactive --revision "$revision" "$filespec") | if [ "$hasColorDiff" ]; then colordiff; else cat; fi
+    done
+}
+
 diffHandlingMoves()
 {
     revision=$1; shift
@@ -77,14 +97,19 @@ diffHandlingMoves()
     # minimal 2 entries necessary: The log of $revision (containing the move
     # info), and the predecessor (containing the predecessor revision).
     # Note: svn-renamed doesn't support the --no-color argument; filter it out.
-    svn-renamed --non-interactive --revision "${revision}:1" --limit 2 "${@//--no-color/}" | {
-	IFS=$'\t'
-	read -r currentRev currentPath
-	read -r previousRev previousPath
-	[ "$previousRev" -a "$previousPath" -a "$previousRev" ] || return 1
-	echo >&2 "svn-dp: Following file move from ${previousPath} in revision ${previousRev}"
-	svn-wrapper diff --revision ${previousRev#r}:${revision} --old="^${previousPath}" --new="^${currentPath}"
-    }
+    typeset renamings=$(svn-renamed --non-interactive --revision "${revision}:1" --limit 2 "${@//--no-color/}")
+    if [ "$renamings" ]; then
+	echo "$renamings" | {
+	    IFS=$'\t'
+	    read -r currentRev currentPath
+	    read -r previousRev previousPath
+	    [ "$previousRev" -a "$previousPath" -a "$previousRev" ] || return 1
+	    echo >&2 "svn-dp: Following file move from ${previousPath} in revision ${previousRev}"
+	    svn-wrapper diff --revision ${previousRev#r}:${revision} --old="^${previousPath}" --new="^${currentPath}"
+	}
+    else
+	diffInitialVersion "$revision" "${@//--no-color/}"
+    fi
 }
 
 set -o pipefail
