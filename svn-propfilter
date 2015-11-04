@@ -89,8 +89,8 @@ case "$scope" in
 		    contents=$line # Start anew.
 		    ;;
 		*)
-		    contents="$contents
-$line"
+		    contents="${contents}${contents:+
+}$line"
 		    ;;
 	    esac
 	done < "$TMPFILE"
@@ -124,8 +124,8 @@ $line"
 		    fi
 		    ;;
 		*)
-		    contents="$contents
-$line"
+		    contents="${contents}${contents:+
+}$line"
 		    ;;
 	    esac
 	done < "$TMPFILE"
