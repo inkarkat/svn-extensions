@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if [[ $# -eq 0 || "${!#}" = -* ]]; then
+    svn status "$@"
+else
+    set -o pipefail
+
+    TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
+    cleanup()
+    {
+	rm -f "$TMPFILE" 2>/dev/null
+    }
+    [ "$DEBUG" ] || trap 'cleanup' EXIT
+
+    svn status "$@" | tee "$TMPFILE" || exit $?
+
+    if [ ! -s "$TMPFILE" ]; then
+	searchArg=${!#}
+	svn status "${@:1:$(($#-1))}" | GREP_OPTIONS= grep -i "$searchArg"
+    fi
+fi
