@@ -82,8 +82,10 @@ do
     if [ "$revision" = 'EOF' ]; then
 	if [ "$hasPathChanges" ]; then
 	    printChangedPath "$previousRevision" "$previousPath"
+	    break
+	else
+	    exit 1
 	fi
-	break
     fi
 
     path=$(getPath --revision "$revision" "${allargs[@]}") || exit $?
