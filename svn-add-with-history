@@ -19,6 +19,20 @@ shift
 status=0
 for filespec
 do
+    if svn info --non-interactive "$filespec" >/dev/null 2>&1; then
+	# Subversion already knows about the file. To check whether it has just
+	# been added to Subversion, we could grep the "svn info" output for
+	# "Schedule: add", or "Revision: 0", or we ask "svn list" whether it
+	# already exists in a revision. 
+	if svn list --non-interactive "$filespec" >/dev/null 2>&1; then
+	    echo >&2 "${filespec}: already exists as a revision (use svn rm first)"
+	    status=1; continue
+	else
+	    echo >&2 "${filespec}: already scheduled for addition, undoing that first"
+	    svn delete --non-interactive --keep-local "$filespec" || { status=1; continue; }
+	fi
+    fi
+
     tmp="${filespec}.tmp"
     mv "$filespec" "$tmp" || { status=1; continue; }
     svn copy --non-interactive "$src" "$filespec" || { status=1; mv "$tmp" "$filespec"; continue; }
