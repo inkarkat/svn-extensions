@@ -26,4 +26,4 @@ do
 
     echo "[01m${svnalias##*svn-}[0m"
     sed -e '1,/<<HELPTEXT$/d;/^Usage: /d;/^HELPTEXT$/{s/.*//;q}' "$svnalias"
-done | less --RAW-CONTROL-CHARS
+done | less --quit-on-intr --RAW-CONTROL-CHARS
