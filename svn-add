@@ -18,7 +18,7 @@ if [ "$(uname -o 2>/dev/null)" = "Cygwin" ]; then
 		# (unless explicitly modified via chmod), and Subversion's
 		# Automatic Property Setting feature adds svn:executable
 		# properties. Strip them off for this file.
-		svn propdel svn:executable "$filespec"
+		svn propdel --quiet svn:executable "$filespec"
 	    fi
 	fi
     done
