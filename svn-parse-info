@@ -1,0 +1,25 @@
+#!/usr/bin/awk -f
+
+BEGIN {
+    FS = ": "
+}
+
+function quote(string)
+{
+    gsub(/'/, "'\\''", string)
+    return "'" string "'"
+}
+
+# Capture the name-value pairs.
+/^$/ { next }
+{
+    key = gensub(/ /, "", "g", $1)
+    value = substr($0, length($1) + length(FS) + 1)
+    scalar[key] = value
+}
+
+END {
+    for (s in scalar) {
+	print s "=" quote(scalar[s])
+    }
+}
