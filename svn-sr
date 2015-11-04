@@ -5,8 +5,8 @@ printUsage()
 {
     cat <<HELPTEXT
 Show server revisions, i.e. whether there are new revisions on the server and
-you should update your working copy. 
---no-color	Turn off color highlighting. 
+you should update your working copy.
+--no-color	Turn off color highlighting.
 Usage: "$(basename "$1")" [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
@@ -14,7 +14,7 @@ typeset isNoColor=
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
     --no-color)		shift; isNoColor='true';;
-esac 
+esac
 
 : ${COLOR_YOUR:='[36m'}
 : ${COLOR_RESET:='[0m'}
@@ -35,7 +35,8 @@ cleanup()
 trap 'cleanup' EXIT
 
 
-svn info --non-interactive "$@" | sed -e 's/^/Your   /' > "$TMPFILE" || exit 1 
+set -o pipefail
+svn info --non-interactive "$@" | sed -e 's/^/Your   /' > "$TMPFILE" || exit 1
 lastLocalRevision=$(sed -n -e 's/^Your * Last Changed Rev: \(.*\)$/\1/p' "$TMPFILE")
 repositoryUrl=$(sed -n -e 's/^Your * URL: \(.*\)$/\1/p' "$TMPFILE")
 
@@ -45,14 +46,14 @@ lastRepoRevision=$(sed -n -e 's/^Server Last Changed Rev: \(.*\)$/\1/p' "$TMPFIL
 for key in 'Server URL: ' 'Revision: ' 'Changed Author: ' 'Changed Rev: ' 'Changed Date: '
 do
     GREP_OPTIONS= grep -e "$key" "$TMPFILE"
-done | colorize 
+done | colorize
 
 echo
 readonly revisionDiff=$((lastRepoRevision - lastLocalRevision))
 if [ $revisionDiff -eq 0 ]; then
     echo "You have the latest revision r$lastLocalRevision that is also on the server."
 elif [ $revisionDiff -eq 1 ]; then
-    echo "You are $revisionDiff revision behind the server, which has r$lastRepoRevision" 
+    echo "You are $revisionDiff revision behind the server, which has r$lastRepoRevision"
 else
     echo "You are $revisionDiff revisions behind the server, which has r$((lastLocalRevision + 1))..r$lastRepoRevision"
 fi
