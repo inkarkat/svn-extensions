@@ -13,4 +13,4 @@ case "$1" in
 esac
 
 export GREP_OPTIONS=
-grep -o -e '\(^\|[^[:alpha:]]\)r[[:digit:]]\+\([^[:alpha:]]\|$\)' | grep -o 'r[[:digit:]]\+'
+grep --line-buffered -o -e '\(^\|[^[:alpha:]]\)r[[:digit:]]\+\([^[:alpha:]]\|$\)' | grep --line-buffered -o 'r[[:digit:]]\+'
