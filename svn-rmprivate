@@ -4,25 +4,24 @@ printUsage()
 {
     cat <<HELPTEXT
 Remove unversioned files and empty directories,
-with -r also any unversioned directory trees.
+with -r|--recursive also any unversioned directory trees.
 With -x|--no-ignore also ignored files.
-Usage: "$(basename "$1")" [-r] [-x|--no-ignore] [PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [-r|--recursive] [-x|--no-ignore] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
-case "$1" in
-    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-esac
 
 recursiveFlag=
-if [ "$1" = "-r" ]; then
-    recursiveFlag='-r'
-    shift
-fi
 additionalArgs=
-if [ "$1" = "-x" ]; then
-    additionalArgs="${additionalArgs}${additionalArgs:+ }--no-ignore"
-    shift
-fi
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	    shift; printUsage "$0"; exit 0;;
+	--recursive|-r)	    shift; recursiveFlag='-r';;
+	--no-ignore|-x)	    shift; additionalArgs="${additionalArgs}${additionalArgs:+ }--no-ignore";;
+	*)		    break;;
+    esac
+done
+
 
 set -o pipefail
 svn status --non-interactive $additionalArgs "$@" | grep '^[?I]' | cut -c 9- | while read victim
