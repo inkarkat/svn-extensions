@@ -1,0 +1,4 @@
+#!/bin/bash
+
+set -o pipefail
+svn info --non-interactive "$@" | sed -n -e 's/^URL: \(.*\)$/\1/p'
