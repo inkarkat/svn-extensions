@@ -24,10 +24,6 @@ do
     filespec=$1
     shift
 
-    [ -d "${filespec}/.svn" -o -d "$(dirname "$filespec")/.svn" ] || {
-	echo >&2 "ERROR: '${filespec}' is not a working copy"
-	exit 1
-    }
     type -P svn >/dev/null 2>&1 || exit 1
     'svn' info "$filespec" 2>/dev/null | if [ "$isServer" ]; then
 	awk '
