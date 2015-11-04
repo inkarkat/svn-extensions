@@ -4,7 +4,7 @@ printUsage()
 {
     cat <<HELPTEXT
 Put binary files under version control when the default config prescribes
-svn:eol-style=native, which complains about non-text files. 
+svn:eol-style=native, which complains about non-text files.
 Usage: "$(basename "$1")" [-?|-h|--help] PATH...
 HELPTEXT
 }
@@ -14,4 +14,4 @@ esac
 
 [ $# -gt 0 ] || { printUsage "$0"; exit 1; }
 
-svn add --config-option 'config:auto-props:*=' "$@"
+svn-wrapper add --config-option 'config:auto-props:*=' "$@"
