@@ -15,6 +15,8 @@ function quote(string)
 }
 function join(array, start, end,      result, i)
 {
+    if (length(array) == 0)
+	return ""
     result = quote(array[start])
     for (i = start + 1; i <= end; i++)
 	result = result " " quote(array[i])
