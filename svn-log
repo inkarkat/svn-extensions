@@ -208,7 +208,7 @@ typeset -a grepArgs=()
 typeset grepColorOption=
 typeset -a grepOptions=()
 typeset isXmlOutput=
-case "$GREP_OPTIONS" in
+case "$GREP_OPTIONS $GREP_DEFAULTS" in
     # The user prefers highlighting of grep matches; enable this in here, too,
     # even though our grep is in a pipe.
     *--color=auto*) grepColorOption='--color=always';;
