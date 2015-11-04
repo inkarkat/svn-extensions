@@ -13,15 +13,31 @@ esac
 
 set -o pipefail
 dirspec=$(cd "${1:-.}" && echo "$PWD")
-if [ ! -d "${dirspec}/.svn" ]; then
+if [ -d "${dirspec}/.svn" ]; then
+    # Detection for Subversion <= 1.6 (where there are .svn directories in every
+    # directory of the working copy), or when in the working copy root.
+    prevDirspec=
+    while [ "$prevDirspec" != "$dirspec" -a -d "${dirspec}/.svn" ]
+    do
+	prevDirspec=$dirspec
+	dirspec=$(dirname -- "$dirspec")
+    done
+    printf '%s\n' "$prevDirspec"
+else
+    # Detection for Subversion >= 1.7, where there's only a single .svn
+    # directory in the working copy root.
+    prevDirspec=
+    while [ "$prevDirspec" != "$dirspec" ]
+    do
+	if [ -d "${dirspec}/.svn" ]; then
+	    printf '%s\n' "$dirspec"
+	    exit 0
+	fi
+
+	prevDirspec=$dirspec
+	dirspec=$(dirname -- "$dirspec")
+    done
+
     echo >&2 "Not inside a working copy${1:+: }${1:-.}"
     exit 1
 fi
-
-prevDirspec=
-while [ "$prevDirspec" != "$dirspec" -a -d "${dirspec}/.svn" ]
-do
-    prevDirspec=$dirspec
-    dirspec=$(dirname -- "$dirspec")
-done
-printf '%s\n' "$prevDirspec"
