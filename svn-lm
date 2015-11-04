@@ -9,7 +9,7 @@ Like "svn lg" filtered for my personal commits.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 Note: svn log option -v is not supported here, but also doesn't make sense here.
-Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
 }
 case "$1" in
