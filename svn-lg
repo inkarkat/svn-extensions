@@ -41,7 +41,8 @@ typeset isListAuthor=t
 typeset isListDate=t
 typeset authorArgs=
 typeset isServerRevisions=
-typeset -a serverArgs=
+typeset isRevisionGiven=
+typeset -a serverArgs=()
 typeset colorize=colorize
 typeset -a allargs=()
 while [ $# -gt 0 ]
@@ -69,12 +70,30 @@ do
 	    else
 		allargs+=("$1")
 	    fi
+
+	    case "$1" in
+		--change|-c)	isRevisionGiven=t;;
+		--revision|-r)	isRevisionGiven=t;;
+	    esac
+
 	    shift
 	    ;;
     esac
 done
 if [ "$isServerRevisions" ]; then
-    allargs+=($(svn-serverrevs "${serverArgs[@]}"))
+    if [ "$isRevisionGiven" ]; then
+	# The revision(s) have been passed; no need to check what's on the
+	# server. Just add the repository URL.
+	# Note: Passing --server when revisions are passed is superfluous;
+	# Subversion will query the server, anyway. But better support this in a
+	# consistent way. Without this, we would either get an unexpected list
+	# of all server revisions, or a Subversion error about -r and -c being
+	# mutually exclusive.
+	allargs+=("${serverArgs[@]}" $(svn-url "${serverArgs[@]}"))
+    else
+	# Determine the range of revisions available on the server.
+	allargs+=($(svn-serverrevs "${serverArgs[@]}"))
+    fi
 fi
 if [ "$limit" ]; then
     if [ "$filter" = 'cat' -a ! "$authorArgs" ]; then
