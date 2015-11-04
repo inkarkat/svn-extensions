@@ -17,4 +17,4 @@ case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 
-svn update --set-depth=empty "$@"
+exec svn update --set-depth=empty "$@"
