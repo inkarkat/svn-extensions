@@ -5,7 +5,8 @@ printUsage()
     cat <<HELPTEXT
 Duplicate something in working copy or repository, remembering history.
 Use --force to avoid the error that the DST already exists.
-Usage: "$(basename "$1")" [-f|--force] [-?|-h|--help] SRC[@REV]... DST
+Use --retroactive to just link the SRC history to an existing cloned copy.
+Usage: "$(basename "$1")" [-f|--force] [--retroactive] [-?|-h|--help] SRC[@REV]... DST
 HELPTEXT
 }
 
@@ -23,9 +24,24 @@ deleteExistingFile()
     svn delete --force "$targetFilespec" || exit $?
 }
 
+retroactiveHistory()
+{
+    if [ ! -f "$2" ]; then
+	echo >&2 "svn-copy: '$2' does not exist; omit the --retroactive argument to create a copy"
+	return 1
+    fi
+
+    TMPFILE=$(mktemp --tmpdir "svn-copy-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/svn-copy.$$")
+    cp -- "$2" "$TMPFILE" || return $?
+    svn delete --force "$2" || { status=$?; mv -- "$TMPFILE" "$2"; return $status; }
+    svn cp "$@" || { status=$?; mv -- "$TMPFILE" "$2"; return $status; }
+    mv -- "$TMPFILE" "$2"
+}
+
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
     -f|--force)		shift; deleteExistingFile "$@";;
+    --retroactive)	shift; retroactiveHistory "$@"; exit $?;;
 esac
 
 svn cp "$@"
