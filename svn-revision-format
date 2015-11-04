@@ -1,0 +1,23 @@
+#!/bin/sh
+
+cat <<HELPTEXT
+HEAD	  The latest (or "youngest") revision in the repository.
+BASE	  The revision number of an item in a working copy. If the item has been
+	  locally modified, this refers to the way the item appears without those
+	  local modifications.
+COMMITTED The most recent revision prior to, or equal to, BASE, in which an item
+	  changed.
+PREV	  The revision immediately before the last revision in which an item
+	  changed. Technically, this boils down to COMMITTED-1.
+{DATE}	  Examples:
+	  {2006-02-17}
+	  {15:30} or {15:30:00.200000}
+	  {"2006-02-17 15:30 +0230"}
+	  {2006-02-17T15:30Z}
+	  {20060217T1530-0500}
+	  When you specify a date, Subversion resolves that date to the most
+	  recent revision of the repository as of that date, and then continues
+	  to operate against that resolved revision number.
+N[:M]	  The log proceeds from N to M
+	  To start with the oldest commits, use -r {DATE}:HEAD
+HELPTEXT
