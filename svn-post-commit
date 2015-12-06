@@ -48,6 +48,7 @@ getFullRepoInformation()
 	hpsw-opr-core)		defaultAffected+=(opr-web.war);;
 	hpsw-opr-config)	defaultAffected+=(opr-config-server.war);;
     esac
+    defaultAffected=($(tr ' ' '\n' <<< "${defaultAffected[@]}" | sort -u | tr '\n' ' '))
 
     fixedVersions+=("$(opr-version --server ${revision:+-r "$revision"} "$repoRoot")")
 }
