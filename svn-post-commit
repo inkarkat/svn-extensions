@@ -256,6 +256,7 @@ echo "**** This is no CR."
 	typeset -a files=("${paths[@]#/${branchFullName}/}")
 	readonly fileNum=${#files[@]}
 	[ $fileNum -eq 1 ] && readonly filePlural= || filePlural=s
+	IFS=$'\n'
 	output <<EOF
 $summary
 
