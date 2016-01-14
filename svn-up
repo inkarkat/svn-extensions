@@ -1,0 +1,24 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Bring changes from the repository into the working copy, and open a log of the
+changes.
+Usage: "$(basename "$1")" [PATH...] [-?|-h|--help]
+HELPTEXT
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+previousRevision=$(svn info --non-interactive "$@" | sed -n -e 's/^Revision: \(.*\)$/\1/p') || exit $?
+svn update "$@" || exit $?
+newRevision=$(svn info --non-interactive "$@" | sed -n -e 's/^Revision: \(.*\)$/\1/p') || exit $?
+
+[ $newRevision -eq $previousRevision ] && exit
+
+if callable rabbitvcs; then
+    RABBITVCS_REVISION_START=$previousRevision RABBITVCS_REVISION_END=$newRevision rabbitvcs log "$@"
+else
+    svn-wrapper log -r $previousRevision:$newRevision "$@"
+fi
