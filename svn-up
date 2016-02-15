@@ -18,7 +18,16 @@ newRevision=$(svn info --non-interactive "$@" | sed -n -e 's/^Revision: \(.*\)$/
 [ $newRevision -eq $previousRevision ] && exit
 
 if callable rabbitvcs; then
-    RABBITVCS_REVISION_START=$previousRevision RABBITVCS_REVISION_END=$newRevision rabbitvcs log "$@"
+    # rabbitvcs does not understand most svn arguments; only the optional PATH.
+    typeset -a rabbitArgs=()
+    if [ -e "${!#}" ] || [[ "${!#}" =~ ^https?:// ]]; then
+	rabbitArgs=("${!#}")
+    fi
+
+    # XXX: rabbitvcs log doesn't handle ascending revision log; the "diff with
+    # previous version" is off-by-one and reverted then.
+    #RABBITVCS_REVISION_START=$previousRevision RABBITVCS_REVISION_END=$newRevision rabbitvcs log "${rabbitArgs[@]}"
+    RABBITVCS_REVISION_START=$newRevision RABBITVCS_REVISION_END=$previousRevision rabbitvcs log "${rabbitArgs[@]}"
 else
     svn-wrapper log -r $previousRevision:$newRevision "$@"
 fi
