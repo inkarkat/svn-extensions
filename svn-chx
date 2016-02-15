@@ -1,0 +1,3 @@
+#!/bin/sh
+
+svn propset svn:executable on "$@"
