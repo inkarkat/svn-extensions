@@ -20,8 +20,10 @@ newRevision=$(svn info --non-interactive "$@" | sed -n -e 's/^Revision: \(.*\)$/
 if callable rabbitvcs; then
     # rabbitvcs does not understand most svn arguments; only the optional PATH.
     typeset -a rabbitArgs=()
-    if [ -e "${!#}" ] || [[ "${!#}" =~ ^https?:// ]]; then
-	rabbitArgs=("${!#}")
+    if [ $# -gt 0 ]; then
+	if [ -e "${!#}" ] || [[ "${!#}" =~ ^https?:// ]]; then
+	    rabbitArgs=("${!#}")
+	fi
     fi
 
     # XXX: rabbitvcs log doesn't handle ascending revision log; the "diff with
