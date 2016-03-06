@@ -12,4 +12,8 @@ case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 
-svn-mergeinfo-find "$@" | xargs svn propdel svn:mergeinfo
+svn-mergeinfo-find "$@" | xargs svn propdel svn:mergeinfo || exit $?
+
+rootdir=$(svn-root "$@") || exit $?
+rootMergeEntries=$(svn propget svn:mergeinfo "$rootdir" | wc -l)
+printf 'Kept mergeinfo of %d entries on %s\n' "$rootMergeEntries" "$rootdir"
