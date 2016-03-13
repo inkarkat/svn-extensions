@@ -9,7 +9,7 @@ Show log grouped by name and sorted by the number of their commits.
 -s|--summary	Show author names sorted by the number of their commits only.
 (*) denotes the first commit
 Note: svn log option -v is not supported here, but also doesn't make sense here.
-Usage: "$(basename "$1")" [--no-merge] [-s|--summary] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [--no-merge] [-s|--summary] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [PATH [PATH ...]] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -45,9 +45,24 @@ do
 	    ;;
     esac
 done
+typeset -a files=()
+while [ ${#allargs[@]} -gt 0 ] && [ -e "${allargs[-1]}" ]
+do
+    files+=("${allargs[-1]}")
+    unset allargs[-1]
+done
+if [ ${#files[@]} -gt 1 ]; then
+    # Strip off duplicate commits that cover multiple files; for the AWL
+    # reporting, it's important that the list remains sorted descending by
+    # revision number.
+    filter="$filter | sort -t '|' -k 2 -r -u"
+fi
 
 set -o pipefail
-svn log --non-interactive "${allargs[@]}" | sed --unbuffered -ne '
+for file in "${files[@]}"
+do
+    svn log --non-interactive "${allargs[@]}" "$file"
+done | sed --unbuffered -ne '
 /^r[0-9]\+/{
     s/\(^r[0-9]\+\) *| *\([^ |]\+\) *| *[^ |]\+[^|]*|.*/\2 | \1 | /
     N
@@ -55,7 +70,7 @@ svn log --non-interactive "${allargs[@]}" | sed --unbuffered -ne '
     s/\n//g
     p
 }
-' | $filter | awk -v isSummary=$isSummary '
+' | eval "$filter" | awk -v isSummary=$isSummary '
 BEGIN {
     FS = " \\| "
 }
