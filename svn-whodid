@@ -7,6 +7,7 @@ Show log grouped by name and sorted by the number of their commits.
 --no-merge	Exclude any commits that mention merge in the revision summary.
 --no-color	Turn off color highlighting.
 -s|--summary	Show author names sorted by the number of their commits only.
+(*) denotes the first commit
 Note: svn log option -v is not supported here, but also doesn't make sense here.
 Usage: "$(basename "$1")" [--no-merge] [-s|--summary] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [PATH...] [-?|-h|--help]
 HELPTEXT
@@ -66,6 +67,7 @@ BEGIN {
     if (highestRev[$1] == "")
 	highestRev[$1] = $2
     commits[$1] = commits[$1] "\n      " $2 ": " substr($0, index($0, $2) + 3 + length($2))
+    firstAuthor=$1
 }
 END {
     # The hash from author to commit count must be reverted, so that we can sort
@@ -80,10 +82,11 @@ END {
     n = asorti(flipped, dest)
     for (j = n; j > 0; j--) {
 	author = flipped[dest[j]]
+	firstCommitIndicator = (firstAuthor == author ? " (*)" : "")
 	if (isSummary == "")
-	    print author " (" commitCount[author] "):" commits[author]
+	    print author " (" commitCount[author] "):" commits[author] firstCommitIndicator
 	else
-	    printf "%6s  %s\n", commitCount[author], author
+	    printf "%6s  %s\n", commitCount[author], author firstCommitIndicator
     }
 }
 ' | colorize | less --quit-on-intr --RAW-CONTROL-CHARS
