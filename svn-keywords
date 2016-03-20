@@ -1,0 +1,47 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show used and configured svn:keywords of passed FILE.
+Usage: "$(basename "$1")" [--fixit] FILE [-?|-h|--help]
+HELPTEXT
+}
+isFixit=
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--fixit)	shift; isFixit=t;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+[ $# -eq 0 ] && { printUsage "$0"; exit 2; }
+
+readonly SVN_KEYWORD_PATTERN='\$\(Date\|LastChangedDate\|Revision\|Rev\|LastChangedRevision\|Author\|LastChangedBy\|HeadURL\|URL\|Id\|Header\)\(:.*\)\?\$'
+
+NL=
+for filespec
+do
+    [ $# -gt 1 ] && echo "${NL}${filespec}:"
+
+    isKeywordsFound=
+    grep -e "$SVN_KEYWORD_PATTERN" "$filespec" && isKeywordsFound=t
+    svnKeywords=$(svn propget svn:keywords "$filespec")
+
+    if [ "$svnKeywords" ]; then
+	echo "svn:keywords: $svnKeywords"
+	NL=$'\n'
+    elif [ "$isKeywordsFound" ]; then
+	if [ "$isFixit" ]; then
+	    props=$(grep -o -e "$SVN_KEYWORD_PATTERN" "$filespec" | sed -e 's/^\$//' -e 's/\(:.*\)\?\$$//' | sort -u)
+	    svn propset svn:keywords "$props" "$filespec" || exit $?
+	    echo >&2 "Defined the following svn:keywords used in the file: $props"
+	else
+	    echo >&2 "WARNING: No svn:keywords defined, but the file contains such!"
+	fi
+	NL=$'\n'
+    fi
+done
