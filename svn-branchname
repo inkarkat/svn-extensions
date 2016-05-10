@@ -18,10 +18,8 @@ do
     dirspec=$1
     shift
 
-    [ -d "${dirspec}/.svn" ] || {
-	echo >&2 "ERROR: '${dirspec}' is not a working copy"
-	exit 1
-    }
+    [ -d "${dirspec}/.svn" ] || 'svn' info "$dirspec" >/dev/null || exit $1
+
     type -P svn >/dev/null 2>&1 || exit 1
     'svn' info "$dirspec" 2>/dev/null | awk -v dirspec="$(readlink -nf "$dirspec")" '
     BEGIN {
