@@ -87,6 +87,7 @@ set -o pipefail
 [ "$diffCommand" -o "$diffOptions" ] && svnDiffOptions="${diffCommand}${diffCommand:+ }-x \"${diffType}${diffOptions:+ }${diffOptions}\""
 ####D echo svn diff --non-interactive $svnDiffOptions "${allargs[@]}"
 if [ "$diffStatArgs" ]; then
+    [ "$hasColorDiff" ] || diffStatArgs="${diffStatArgs//-C/}"
     eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | diffstat $diffStatArgs
 elif [ "$hasColorDiff" ]; then
     # Pipe through colordiff instead of using svn --diff-cmd colordiff, because
