@@ -3,20 +3,32 @@
 printUsage()
 {
     cat <<HELPTEXT
-Highlights diff output red/green.
-With -b (ignore space change) and -w (ignore all white space) options.
-Can also show statistics with --stat, --numstat and --shortstat.
+Display the word-based differences between two revisions or paths.
+Highlights deletions/additions in red/green.
 --no-color	Turn off colored diff.
+The following 'wdiff' options can be passed:
+-s, --statistics
+In case the 'dwdiff' command is installed, the following options can be passed:
+-d <delimiters>, --delimiters=<delimiters>
+-P, --punctuation
+-L[<width>], --line-numbers[=<width>]
+-C<num>, --context=<num>
+-m<num>, --match-context=<num>
+--aggregate-changes
+-A <algorithm>, --algorithm=<algorithm>
+-S[<marker>], --paragraph-separator[=<marker>]
 
 Default is working copy to last commit; use
 -r PREV to diff working copy with previous commit and
 -r PREV:COMMITTED (or svn dp) to show change in previous commit, and
 -r REV:COMMITTED to show changes across revisions.
 
-Usage: "$(basename "$1")" [-b] [-w] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
+Usage: "$(basename "$1")" [-b] [-w] [--context] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
+diffCommand=
+diffType=-u
 diffOptions=
 diffStatArgs=
 
@@ -37,6 +49,11 @@ do
 	-w)
 	    shift
 	    diffOptions="${diffOptions}${diffOptions:+ }-w"
+	    ;;
+	--context)
+	    shift
+	    diffCommand="--diff-cmd diff"	# Need to specify an external diff program; the one built into Subversion can only do unified diffs.
+	    diffType="-c"
 	    ;;
 	# Note: --ignore-eol-style seems to be handled internally by svn; it is
 	# not supported by GNU diff or colordiff.
@@ -62,13 +79,13 @@ do
 	    ;;
     esac
 done
-
 # Note: diffOptions can be passed as a single argument "-x -u -b" as well as the
 # two-arg -x "-u -b", but not as individual arguments.
 # Note: Must not pass an empty "" argument to svn, or the filtering for TARGET
 # doesn't work any more.
 set -o pipefail
-[ "$diffOptions" ] && svnDiffOptions="-x \"-u ${diffOptions}\""
+[ "$diffCommand" -o "$diffOptions" ] && svnDiffOptions="${diffCommand}${diffCommand:+ }-x \"${diffType}${diffOptions:+ }${diffOptions}\""
+####D echo svn diff --non-interactive $svnDiffOptions "${allargs[@]}"
 if [ "$diffStatArgs" ]; then
     eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | diffstat $diffStatArgs
 elif [ "$hasColorDiff" ]; then
