@@ -1,0 +1,16 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Cherry-pick some commit(s) and merge them into the current working copy.
+Usage: "$(basename "$1")" [-c M[,N...] [-?|-h|--help]
+HELPTEXT
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+workingCopyRoot=$(svn-root) || exit $?
+svn merge --no-ancestry "$@" "$workingCopyRoot" || exit $?
+svn-diff --stat "$workingCopyRoot"
