@@ -1,0 +1,43 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Undo a (range of) commits by doing a reverse merge.
+Usage: "$(basename "$1")" [-c M[,N...] | -r N:M ...] [SOURCE[@REV]] [-?|-h|--help]
+HELPTEXT
+}
+
+typeset -a allargs=()
+typeset -a revisions=()
+typeset -a changes=()
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--change|-c)	shift; changes+=("-${1#-}"); shift;;
+	--revision|-r)	shift
+			# N:M
+			N=${1%:*}
+			M=${1#*:}
+			if [ ! "$M" ]; then
+			    changes+=("-$N")
+			elif [ $N -gt $M ]; then
+			    revisions+=("$1")
+			else
+			    revisions+=("$M:$N")
+			fi
+			shift
+			;;
+	*)		allargs+=("$1")
+			shift
+			;;
+    esac
+done
+if [ ${#allargs[@]} -eq 0 ]; then
+    allargs=("$(svn-root)") || exit $?
+fi
+
+# The working copy should be up to date, at a single revision.
+svn-up "${allargs[@]}" || exit $?
+svn merge ${revisions:+--revision} "${revisions[@]}" ${changes:+--change} "${changes[@]}" "${allargs[@]}"
