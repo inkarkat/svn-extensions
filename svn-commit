@@ -7,6 +7,7 @@ shopt -qs extglob
 
 revision=
 committedFile=
+isOnlyDeletedFiles=
 svnCommit()
 {
     getCommittedFile "$@"
@@ -66,12 +67,18 @@ getCommittedFile()
 	    # revision).
 	    local deletedFile=$(svn status --non-interactive "${commonArguments[@]}"  2> >(grep -Fv 'Write error: Broken pipe') | sed -ne '/^D.\{7\}/{ s/^.\{8\}//p; q}') # Don't check for exit status because sed's "q" command causes an "svn: Write error: Broken pipe".
 	    [ "$deletedFile" ] && committedFile=$(dirname -- "$deletedFile") || committedFile=
+	    [ "$committedFile" ] && isOnlyDeletedFiles=t
 	fi
     fi
 }
 
 getCommitRevision()
 {
+    if [ "$isOnlyDeletedFiles" ]; then
+	# We need to update the directory that includes the deleted files to get
+	# the correct committed revision.
+	svn update --depth=empty "$committedFile:?}" > /dev/null 2>&1
+    fi
     revision=$(svn info --non-interactive "${committedFile:?}" | sed -ne 's/^Revision: //p') || return
 }
 
