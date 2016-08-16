@@ -77,7 +77,7 @@ getCommitRevision()
     if [ "$isOnlyDeletedFiles" ]; then
 	# We need to update the directory that includes the deleted files to get
 	# the correct committed revision.
-	svn update --depth=empty "$committedFile:?}" > /dev/null 2>&1
+	svn update --depth=empty "${committedFile:?}" > /dev/null 2>&1
     fi
     revision=$(svn info --non-interactive "${committedFile:?}" | sed -ne 's/^Revision: //p') || return
 }
