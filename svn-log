@@ -27,8 +27,12 @@ Detailed log messages.
 --no-color	Turn off color highlighting.
 --format FORMAT Output in a particular format. Implies --no-color. Supported
 		formats:
-		revisionsonly: Only the list of revisions (one per line), i.e.
-		use the tool only for its filtering capabilitites.
+		revisionsonly:  Only the list of revisions (one per line), i.e.
+				use the tool only for its filtering
+				capabilities.
+		noheader:	Omit the revision, author, and date. Just print
+				the message and optional file list.
+		merge:		Shortened format for commits of merges.
 Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [--no-color|--format FORMAT] [-?|-h|--help]
 HELPTEXT
 }
@@ -227,6 +231,26 @@ limitFilter()
 revisionsonly()
 {
     sed --unbuffered -n -e 's/^revision \(r[0-9]\+\)$/\1/p'
+}
+noheader()
+{
+    sed --unbuffered -e '
+/^$/{ N; s/^\nrevision \(r[0-9]\+\)$/--------/ }
+/^revision \(r[0-9]\+\)$/d
+/^Author:/d
+/^Date:/ { N; d }
+s/^    //
+'
+}
+merge()
+{
+    sed --unbuffered -e '
+/^ *$/d
+s/^revision \(r[0-9]\+\)$/--- \1 ---/
+/^Author:/d
+/^Date:/ { N; d }
+s/^    //
+'
 }
 
 : ${COLOR_HEADER:='[36m'}
