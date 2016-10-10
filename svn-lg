@@ -43,6 +43,7 @@ typeset authorArgs=
 typeset isServerRevisions=
 typeset isRevisionGiven=
 typeset isReverse=
+typeset reverseFilter=cat
 typeset -a serverArgs=()
 typeset colorize=colorize
 typeset -a allargs=()
@@ -108,8 +109,7 @@ fi
 
 if [ "$isReverse" ]; then
     if [ "$isRevisionGiven" ]; then
-	echo "ERROR: -R|--reverse not supported with passed revisions."
-	exit 1
+	reverseFilter=tac
     else
 	allargs+=('--revision' '1:BASE')
     fi
@@ -134,4 +134,4 @@ svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pip
     s/\n//g
     p
 }
-' | $filter | $limitFilter | $colorize | less --RAW-CONTROL-CHARS
+' | $filter | $limitFilter | $reverseFilter | $colorize | less --RAW-CONTROL-CHARS
