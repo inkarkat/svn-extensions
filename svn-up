@@ -18,7 +18,7 @@ newRevision=$(svn info --non-interactive "$@" | sed -n -e 's/^Revision: \(.*\)$/
 [ $newRevision -eq $previousRevision ] && exit
 
 if callable rabbitvcs; then
-    isChanges=$(svn log --non-interactive -l 1 -r $previousRevision:$newRevision "$@")
+    isChanges=$(svn log --non-interactive --incremental -l 1 -r $previousRevision:$newRevision "$@")
     if [ ! "$isChanges" ]; then
 	echo >&2 "Repository changed from $previousRevision to $newRevision, but no changes happened on the current branch."
 	exit
