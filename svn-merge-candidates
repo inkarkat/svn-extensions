@@ -1,0 +1,47 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show merge candidates in SOURCE that still needs merging into the working copy.
+One-line log messages with author, date and commit summary.
+-R, --reverse	Show in reverse order.
+-v, --verbose	Show full log.
+--author REGEXP	Limit to commits by author.
+--no-list-author Omit the author name from the log; happens automatically if
+		REGEXP is literal text.
+--no-list-date	Omit the date from the log.
+--no-color	Turn off color highlighting.
+Usage: "$(basename "$1")" [-R|--reverse] [-v|--verbose] [--author REGEXP] [--no-list-author] [--no-list-date] [--no-color] SOURCE[@REV] [-?|-h|--help]
+HELPTEXT
+}
+
+logCommand=svn-lg
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--verbose|-v)	if [ "$logCommand" = 'svn-log' ]; then
+			    # Allow pass-through of second -v to svn-log.
+			    break
+			else
+			    shift
+			    logCommand=svn-log
+			fi
+			;;
+	--)		shift; break;;
+	*)		break;;
+    esac
+done
+[ $# -eq 0 ] && { printUsage "$0"; exit 2; }
+source=${!#}
+
+IFS=$'\n'
+typeset -a revisions=($(svn mergeinfo --non-interactive --show-revs eligible "$source" | tac))	# Subversion lists the revisions from oldest to newest; reverse this (cheap to do here) to have the same default sorting as svn log.
+if [ ${#revisions[@]} -eq 0 ]; then
+    echo >&2 "No merge candidates found"
+    exit 1
+fi
+
+printf >&2 'Considering %d revision(s).\n' "${#revisions[@]}"
+$logCommand "${@:1:$(($#-1))}" ${revisions[*]/r/-c } "$source"

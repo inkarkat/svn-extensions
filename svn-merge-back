@@ -1,0 +1,41 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Find merge candidates in SOURCE that still needs merging into the working copy,
+and merge them back.
+Usage: "$(basename "$1")" [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] SOURCE[@REV] [-?|-h|--help]
+HELPTEXT
+}
+
+[ $# -eq 0 ] && { printUsage "$0"; exit 2; }
+source=${!#}
+
+IFS=$'\n'
+typeset -a revisions=($(svn mergeinfo --non-interactive --show-revs eligible "$source"))
+if [ ${#revisions[@]} -eq 0 ]; then
+    echo >&2 "No merge candidates found"
+    exit 1
+fi
+
+printf >&2 'Considering %d revision(s).\n' "${#revisions[@]}"
+IFS=$'\n'
+typeset -a mergeRevisions=($(svn-log --format revisionsonly "${@:1:$(($#-1))}" ${revisions[*]/r/-c } "$source"))
+if [ ${#mergeRevisions[@]} -le 0 ]; then
+    echo >&2 "No revisions to merge."
+    exit 1
+fi
+svn-wrapper merge --non-interactive ${mergeRevisions[*]/r/-c } "$source" || exit $?
+
+relativeSource=$(svn info --non-interactive "$source" | sed -ne 's/^Relative URL: //p') || relativeSource=$source
+commitMessage=svn-commit.tmp
+if [ ${#mergeRevisions} -eq 1 ]; then
+    printf 'Merged %s from %s:\n' "${mergeRevisions[0]}" "$relativeSource"
+    svn-log --format noheader "${@:1:$(($#-1))}" ${revisions[*]/r/-c } "$source"
+else
+    IFS=','
+    mergeRevisionsList="${mergeRevisions[*]/r/ r}"
+    printf 'Merged revisions %s from %s:\n' "${mergeRevisionsList# }" "$relativeSource"
+    svn-log --format merge "${@:1:$(($#-1))}" ${revisions[*]/r/-c } "$source"
+fi > "$commitMessage"
