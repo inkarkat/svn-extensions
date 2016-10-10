@@ -16,7 +16,7 @@ One-line log messages with author, date and commit summary.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 Note: svn log option -v is not supported here, but also doesn't make sense here.
-Usage: "$(basename "$1")" [--no-merge] [--author REGEXP] [--no-list-author] [--no-list-date] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--no-color] [--server] [PATH...] [-?|-h|--help]
+Usage: "$(basename "$1")" [-R|--reverse] [--no-merge] [--author REGEXP] [--no-list-author] [--no-list-date] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--no-color] [--server] [PATH...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -42,6 +42,7 @@ typeset isListDate=t
 typeset authorArgs=
 typeset isServerRevisions=
 typeset isRevisionGiven=
+typeset isReverse=
 typeset -a serverArgs=()
 typeset colorize=colorize
 typeset -a allargs=()
@@ -51,7 +52,7 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--limit|-l)	shift; limit=$1; shift;;
 	--verbose|-v)	echo >&2 "Extra information via $1 is not supported here!"; exit 2;;
-	--reverse|-R)	shift; allargs+=('--revision' '1:BASE');;
+	--reverse|-R)	shift; isReverse=t;;
 	--no-merge)	shift; filter="grep --line-buffered -iv ${SVN_MERGE_COMMENT_PATTERN}";;
 	--no-color)	shift; colorize='cat';;
 	--no-list-author)	shift; isListAuthor=;;
@@ -102,6 +103,15 @@ if [ "$limit" ]; then
 	allargs+=(--limit $limit)
     else
 	limitFilter="sed ${limit}q"
+    fi
+fi
+
+if [ "$isReverse" ]; then
+    if [ "$isRevisionGiven" ]; then
+	echo "ERROR: -R|--reverse not supported with passed revisions."
+	exit 1
+    else
+	allargs+=('--revision' '1:BASE')
     fi
 fi
 
