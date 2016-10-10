@@ -25,8 +25,51 @@ Detailed log messages.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 --no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [--no-color] [-?|-h|--help]
+--format FORMAT Output in a particular format. Implies --no-color. Supported
+		formats:
+		revisionsonly: Only the list of revisions (one per line), i.e.
+		use the tool only for its filtering capabilitites.
+Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [--no-color|--format FORMAT] [-?|-h|--help]
 HELPTEXT
+}
+
+reformatter()
+{
+    sed --unbuffered -e '
+/^r[0-9]\+/{
+    # Expand revision info into multi-line header.
+    s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
+    2!s/^/\n/
+    b
+}
+# Silently capture the changed file list in hold space.
+/^Changed paths:/,/^$/ {
+    /^Changed paths:/{
+	# Because this range consumes the empty line between the changed file
+	# list and the revision summary, it must be printed explicitly to
+	# maintain the spacing towards the header.
+	a\
+
+	s/^/\n/	# Also start the stored block with a newline.
+	# This starts the changed file list.
+	h
+	d
+    }
+    H
+    d
+}
+
+# At the end of the revision log, print the changed file list (in case of "svn
+# log -v").
+/^-\+$/{ g; /^$/d; s/\n$//; b }
+
+# Indent revision message.
+s/^/    /
+
+# Note: With --incremental (used by "svn-lc"), there is no trailing separator
+# line.
+${ G; s/\n$//; b }
+'
 }
 
 mergeFilter()
@@ -181,6 +224,11 @@ limitFilter()
     done
 }
 
+revisionsonly()
+{
+    sed --unbuffered -n -e 's/^revision \(r[0-9]\+\)$/\1/p'
+}
+
 : ${COLOR_HEADER:='[36m'}
 : ${COLOR_FILEADDED:='[32m'}
 : ${COLOR_FILECHANGED:='[34m'}
@@ -208,6 +256,7 @@ typeset -a grepArgs=()
 typeset grepColorOption=
 typeset -a grepOptions=()
 typeset isXmlOutput=
+typeset reformatFilter=reformatter
 case "$GREP_OPTIONS $GREP_DEFAULTS" in
     # The user prefers highlighting of grep matches; enable this in here, too,
     # even though our grep is in a pipe.
@@ -234,6 +283,7 @@ do
 	--author)	shift; grepFilter='grepFilter'; authorArgs=$1; shift;;
 	--server)	shift; isServerRevisions='true';;
 	--xml)		isXmlOutput=t; allargs+=("$1");  shift;;
+	--format)	shift; colorize=$1; shift;;
 	*)
 	    if [ "$isServerRevisions" -a -d "$1" ]; then
 		serverArgs=("$1")
@@ -284,38 +334,7 @@ if [ "$isXmlOutput" ]; then
     svn log --non-interactive "${allargs[@]}" | less --RAW-CONTROL-CHARS
     exit $?
 fi
-svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pipe') | sed --unbuffered -e '
-/^r[0-9]\+/{
-    # Expand revision info into multi-line header.
-    s/\(^r[0-9]\+\) *| *\([^|]\+\) *| *\([^|]\+\) *|.*/revision \1\nAuthor: \2\nDate:   \3 /
-    2!s/^/\n/
-    b
-}
-# Silently capture the changed file list in hold space.
-/^Changed paths:/,/^$/ {
-    /^Changed paths:/{
-	# Because this range consumes the empty line between the changed file
-	# list and the revision summary, it must be printed explicitly to
-	# maintain the spacing towards the header.
-	a\
-
-	s/^/\n/	# Also start the stored block with a newline.
-	# This starts the changed file list.
-	h
-	d
-    }
-    H
-    d
-}
-
-# At the end of the revision log, print the changed file list (in case of "svn
-# log -v").
-/^-\+$/{ g; /^$/d; s/\n$//; b }
-
-# Indent revision message.
-s/^/    /
-
-# Note: With --incremental (used by "svn-lc"), there is no trailing separator
-# line.
-${ G; s/\n$//; b }
-' | $mergeFilter | $grepFilter | $limitFilter | $colorize | less --RAW-CONTROL-CHARS
+svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pipe') | $reformatFilter | $mergeFilter | $grepFilter | $limitFilter | $colorize | less --RAW-CONTROL-CHARS
+status=$?
+[ $status -eq 141 -a "$limitFilter" = 'limitFilter' ] && status=0   # Ignore "svn: Write error: Broken pipe"
+exit $status
