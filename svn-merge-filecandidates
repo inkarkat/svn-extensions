@@ -1,0 +1,75 @@
+#!/bin/bash
+
+set -o pipefail
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show files in SOURCE that still needs merging into the working copy.
+Listing of files with author(s) and revision(s) they appear in.
+Usage: "$(basename "$1")" [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] SOURCE[@REV] [-?|-h|--help]
+HELPTEXT
+}
+
+: ${COLOR_REVISION:='[36m'}
+: ${COLOR_AUTOR_DATE:='[32m'}
+: ${COLOR_RESET:='[0m'}
+
+typeset -a allargs=()
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--no-color)	shift; COLOR_REVISION='' COLOR_AUTOR_DATE=''; COLOR_RESET='';;
+	*) allargs+=("$1"); shift;;
+    esac
+done
+
+svn-merge-candidates --verbose --verbose --no-color "${allargs[@]}" | \
+    awk -v colorRevision=$COLOR_REVISION -v colorAuthorDate=$COLOR_AUTOR_DATE -v colorReset=$COLOR_RESET '
+function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
+function dirname(s) { return gensub(/[^/]+$/, "", "", s) }
+BEGIN {
+    filespecCommonPrefix = " "
+}
+/^revision r[0-9]+$/ { revision = substr($0, 10) }
+/^Author: / { author = substr($0, 9) }
+/^Date:   / { date = substr($0, 9) }
+/^Changed paths:$/,/^$/ {
+    if ($0 == "Changed paths:" || $0 == "") {
+	next
+    }
+    filespec = substr($0, 6)
+    revisions[filespec][revision] = 1
+    authors[filespec][rtrim(author)] = 1
+
+    if (filespecCommonPrefix == " ") filespecCommonPrefix = dirname(filespec)    # Keep at least the filename.
+    for (i = length(filespecCommonPrefix); i > 0; i--) {
+	if (substr(filespec, 1, i) == filespecCommonPrefix) {
+	    break
+	} else {
+	    filespecCommonPrefix = substr(filespecCommonPrefix, 1, i - 1)
+	}
+    }
+}
+END {
+    for (f in revisions) {
+	shortFilespec = substr(f, length(filespecCommonPrefix) + 1)
+	if (shortFilespec == "") shortFilespec = "."
+	printf "%s ", shortFilespec
+
+	n = asorti(authors[f], sortedAuthors)
+	printf "%s(%s", colorAuthorDate, sortedAuthors[1]
+	for (i = 2; i <= n; i++) {
+	    printf ", %s", sortedAuthors[i]
+	}
+	printf ")%s ", colorReset
+
+	n = asorti(revisions[f], sortedRevisions)
+	for (i = 1; i <= n; i++) {
+	    printf "-c %s%s%s ", colorRevision, sortedRevisions[i], colorReset
+	}
+	print ""
+    }
+}
+' | sort
