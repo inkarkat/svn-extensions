@@ -44,8 +44,9 @@ if [ ${#mergeRevisions[@]} -le 0 ]; then
     echo >&2 "No revisions to merge."
     exit 1
 fi
-svn-wrapper merge --non-interactive ${mergeRevisions[*]/r/-c } "$source" || exit $?
 
+svn-wrapper merge --non-interactive ${mergeRevisions[*]/r/-c } "$source"
+status=$?   # Continue with building the commit message template; we might still want to commit after resolving any conflicts.
 
 relativeSource=$(svn info --non-interactive "$source" | sed -ne 's/^Relative URL: //p') || relativeSource=$source
 commitMessage=svn-commit.tmp
@@ -58,3 +59,5 @@ else
     printf 'Merge revisions %s from %s\n\n' "${mergeRevisionsList# }" "$relativeSource"
     eval 'svn-log --format merge "${allargs[@]}"' ${mergeRevisions[*]/r/-c } '"$source"'
 fi > "$commitMessage"
+
+exit $status
