@@ -29,9 +29,9 @@ function join(array, start, end,      result, i)
     scalar["revision"] = $1
     scalar["author"] = $2
     scalar["timestampFull"] = $3
-    scalar["timestamp"] = gensub(/ \([^()]+\)$/, "", "", $3)
-    scalar["date"] = gensub(/ .*$/, "", "", $3)
-    scalar["time"] = gensub(/^[^ ]+ ([^ ]+) .*$/, "\\1", "", $3)
+    scalar["timestamp"] = gensub(/ \([^()]+\)$/, "", 1, $3)
+    scalar["date"] = gensub(/ .*$/, "", 1, $3)
+    scalar["time"] = gensub(/^[^ ]+ ([^ ]+) .*$/, "\\1", 1, $3)
     next
 }
 
