@@ -27,4 +27,10 @@ if [ ${#allargs[@]} -eq 0 ]; then
 fi
 
 svn merge --ignore-ancestry ${revisions:+--revision} "${revisions[@]}" ${changes:+--change} "${changes[@]}" "${allargs[@]}"
-svn-diff --stat "${allargs[@]}"
+
+lastArg=; [ $# -gt 0 ] && lastArg=${!#}
+if [ -e "$lastArg" ]; then
+    svn-diff --stat "$lastArg"
+else
+    svn-diff --stat
+fi
