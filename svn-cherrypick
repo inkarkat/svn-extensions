@@ -26,5 +26,5 @@ if [ ${#allargs[@]} -eq 0 ]; then
     allargs=("$(svn-root)") || exit $?
 fi
 
-svn merge --no-ancestry ${revisions:+--revision} "${revisions[@]}" ${changes:+--change} "${changes[@]}" "${allargs[@]}"
+svn merge --ignore-ancestry ${revisions:+--revision} "${revisions[@]}" ${changes:+--change} "${changes[@]}" "${allargs[@]}"
 svn-diff --stat "${allargs[@]}"
