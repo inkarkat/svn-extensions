@@ -41,8 +41,8 @@ do
 			    unset $color
 			done
 			;;
-	--change|-c)	shift; revisions+=("$1"); shift;;
-	--revision|-r)	shift; revisions+=("$1"); shift;;
+	--change|-c)	shift; revisions+=("${1#r}"); shift;;
+	--revision|-r)	shift; revisions+=("${1#r}"); shift;;
 	?(r)+([0-9]))	       revisions+=("${1#r}"); shift;;
 	--stat)
 	    statArgs+=("$1")
