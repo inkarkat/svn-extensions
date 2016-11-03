@@ -30,7 +30,7 @@ svn merge --ignore-ancestry ${revisions:+--revision} "${revisions[@]}" ${changes
 
 lastArg=; [ $# -gt 0 ] && lastArg=${!#}
 if [ -e "$lastArg" ]; then
-    svn-diff --stat "$lastArg"
+    svn-diff --stat "$@"
 else
-    svn-diff --stat
+    svn-diff --stat "${@:1:$(($#-1))}"
 fi
