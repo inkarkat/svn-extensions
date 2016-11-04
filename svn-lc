@@ -98,7 +98,7 @@ showNoMatch()
 
 filterRecursivePaths()
 {
-    svn-filefilter --non-recursive "$(svn-pathname "${paths[@]}")"
+    svn-filefilter --non-recursive "${colorargs[@]}" "$(svn-pathname "${paths[@]}")"
 }
 
 svnLog()
