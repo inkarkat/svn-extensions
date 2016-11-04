@@ -34,7 +34,7 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 		log, you can use the superior filters for property changes.
 --no-log	Do not actually show the log, just the diff. In contrast to svn
 		dp, you do not need to pass all revisions separately.
-Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
+Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [--prop-filter REGEXP] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
 HELPTEXT
 }
 
