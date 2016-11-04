@@ -1,0 +1,16 @@
+#!/bin/bash
+printUsage()
+{
+    cat <<HELPTEXT
+Annotate merge information with the revision and author.
+--include-date	Include the commit date.
+--include-log	Include the full log message for each commit.
+Usage: "$(basename "$1")" [--include-date] [--include-log] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--server|PATH] [--no-color] [-?|-h|--help]
+HELPTEXT
+}
+
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+exec svn-prop-annotate --non-recursive --prop-filter 'svn:mergeinfo' "$@"

@@ -1,0 +1,95 @@
+#!/bin/bash
+printUsage()
+{
+    cat <<HELPTEXT
+Annotate a log of property changes with the revision and author.
+--prop-filter REGEXP
+		Limit to changes to properties matching REGEXP (e.g.
+		svn:mergeinfo); all other property names are ignored.
+--include-date	Include the commit date.
+--include-log	Include the full log message for each commit.
+Usage: "$(basename "$1")" [--prop-filter REGEXP] [--include-date] [--include-log] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [-?|-h|--help]
+HELPTEXT
+}
+
+: ${COLOR_REVISION:='[36m'}
+: ${COLOR_AUTOR_DATE:='[35m'}
+: ${COLOR_DIFF_ADDED:='[32m'}
+: ${COLOR_DIFF_REMOVED:='[31m'}
+: ${COLOR_RESET:='[0m'}
+
+typeset -a allargs=()
+typeset isLog=
+typeset isDate=
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--no-color)	shift; COLOR_REVISION='' COLOR_AUTOR_DATE=''; COLOR_DIFF_ADDED=''; COLOR_DIFF_REMOVED=''; COLOR_RESET='';;
+	--include-date)	    shift; isDate=t;;
+	--include-log)	    shift; isLog=t;;
+	*) allargs+=("$1"); shift;;
+    esac
+done
+
+svn-lc --no-color --prop only --prop-scope minimal "${allargs[@]}" | \
+    awk -v isDate=$isDate -v isLog=$isLog -v colorRevision=$COLOR_REVISION -v colorAuthorDate=$COLOR_AUTOR_DATE -v colorDiffAdded=$COLOR_DIFF_ADDED -v colorDiffRemoved=$COLOR_DIFF_REMOVED -v colorReset=$COLOR_RESET '
+function printLine(mode, change,        sigil, authorDate) {
+    if (isDate) {
+	authorDate="(" author ", " gensub(/ .*/, "", 1, date) ")"
+    } else {
+	authorDate=author
+    }
+
+    if (change == "") {
+	printf "%s%6s%s %s%-10s%s\n", colorRevision, revision, colorReset, colorAuthorDate, authorDate, colorReset
+    } else if (mode == "diff") {
+	sigil = substr(change, 1, 1)
+	if (sigil == "-") {
+	    printf "%s%6s%s %s%-10s%s %s%s%s\n", colorRevision, revision, colorReset, colorAuthorDate, authorDate, colorReset, colorDiffRemoved, change, colorReset
+	} else if (sigil == "+") {
+	    printf "%s%6s%s %s%-10s%s %s%s%s\n", colorRevision, revision, colorReset, colorAuthorDate, authorDate, colorReset, colorDiffAdded, change, colorReset
+	}
+    } else {
+	printf "%s%6s%s %s%-10s%s %s\n", colorRevision, revision, colorReset, colorAuthorDate, authorDate, colorReset, change
+    }
+}
+function printEmptyLines(mode, cnt,        i) {
+    for (i=0; i < cnt; i++) {
+	printLine(mode, "")
+    }
+}
+BEGIN {
+    filespecCommonPrefix = " "
+}
+/^Date:   /,/^(Index|Omitted): / {
+    if (isLog && $0 !~ /^Date:   / && $0 !~ /^(Index|Omitted): /) {
+	print
+    }
+}
+/^## .* ##$/,/^revision r[0-9]+$/ {
+    if ($0 ~ /^## .* ##$/) {
+	emptyLineCnt = 0
+	if ($0 ~ /^## -0,0 /) {
+	    mode = "add"
+	} else if ($0 ~ / \+0,0 ##$/) {
+	    mode = "remove"
+	} else {
+	    mode = "diff"
+	}
+    } else if ($0 == "") {
+	emptyLineCnt += 1
+    } else if ($0 ~ /^revision r[0-9]+$/) {
+	emptyLineCnt -= 1
+	printEmptyLines(mode, emptyLineCnt)
+	emptyLineCnt = 0
+    } else {
+	printEmptyLines(mode, emptyLineCnt)
+	emptyLineCnt = 0
+	printLine(mode, $0)
+    }
+}
+/^revision r[0-9]+$/ { revision = substr($0, 11) }
+/^Author: / { author = substr($0, 9, 10) }
+/^Date:   / { date = substr($0, 9) }
+'
