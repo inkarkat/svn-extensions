@@ -25,7 +25,8 @@ Note: If you supply -c|--change REV, you can just as well use "svn show REV".
 --non-recursive	Only show changes to PATH itself, omit changes to contained
 		files / directories. Useful when you only want to see file
 		additions / removals or only property changes on the directory
-		itself.
+		itself. Note that this means that only changes on the current
+		branch are reported.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 --no-color	Turn off color highlighting.
