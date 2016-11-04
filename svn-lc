@@ -41,6 +41,11 @@ getRevisions()
 {
     typeset -a svnAdditionalArgs=()
     typeset xmlFilter=
+    case "$propFilterMethod" in
+	only) xmlFilter="${xmlFilter}${xmlFilter:+ }-i './/path/@prop-mods = \"true\"'";;
+	skip) xmlFilter="${xmlFilter}${xmlFilter:+ }-i './/path/@text-mods = \"true\"'";;
+    esac
+
     if [ "$authorArgs" ]; then
 	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'contains(author,\"${authorArgs}\")'"
     fi
