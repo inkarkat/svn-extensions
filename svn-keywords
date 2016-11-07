@@ -29,7 +29,7 @@ do
 
     isKeywordsFound=
     grep -e "$SVN_KEYWORD_PATTERN" "$filespec" && isKeywordsFound=t
-    svnKeywords=$(svn propget svn:keywords "$filespec")
+    svnKeywords=$(svn propget svn:keywords "$filespec" 2>/dev/null)
 
     if [ "$svnKeywords" ]; then
 	echo "svn:keywords: $svnKeywords"
