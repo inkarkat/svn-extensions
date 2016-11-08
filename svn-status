@@ -15,6 +15,10 @@ else
     svn status "$@" | tee "$TMPFILE" || exit $?
 
     if [ ! -s "$TMPFILE" ]; then
+	# Support extended "svn-status PATTERN" variant. But first ensure that
+	# the last argument is not a PATH, and the CWD indeed is a Subversion
+	# working copy.
+	svn info "${@:1:$(($#-1))}" >/dev/null 2>&1 || exit 0
 	searchArg=${!#}
 	svn status "${@:1:$(($#-1))}" | GREP_OPTIONS= grep -i "$searchArg"
     fi
