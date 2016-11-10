@@ -1,0 +1,30 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Print working copy files that have status [matching FIELD_MATCH].
+The output (newline-delimited filespecs) can be consumed by other tools.
+Usage: "$(basename "$1")" [-q|--quiet ...] [--match FIELD_MATCH] [PATH] [-?|-h|--help]
+HELPTEXT
+}
+
+typeset -a allargs=()
+typeset match=
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--match)	shift; match="$1"; shift;;
+	--)		shift; break;;
+	*)		allargs+=("$1")
+			shift
+			;;
+    esac
+done
+
+if [ "$match" ]; then
+    exec svn-wrapper status "${allargs[@]}" | GREP_OPTIONS= grep "^${match}" | cut -c 9-
+else
+    exec svn-wrapper status "${allargs[@]}" | cut -c 9-
+fi
