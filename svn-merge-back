@@ -10,6 +10,7 @@ HELPTEXT
 }
 
 typeset -a allargs=()
+typeset -a mergeargs=()
 typeset -a candidateRevisions=()
 isRevisionGiven=
 while [ $# -gt 1 ]
@@ -18,6 +19,9 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--change|-c)	shift; candidateRevisions+=("$1"); shift; isRevisionGiven=t;;
 	--revision|-r)	shift; candidateRevisions+=("$1"); shift; isRevisionGiven=t;;
+	--record-only|--dry-run|--ignore-ancestry|--allow-mixed-revisions)
+			mergeargs+=("$1"); shift;;
+	--accept)	mergeargs+=("$1" "$2"); shift; shift;;
 	*)		allargs+=("$1"); shift;;
     esac
 done
@@ -45,8 +49,10 @@ if [ ${#mergeRevisions[@]} -le 0 ]; then
     exit 1
 fi
 
-svn-wrapper merge --non-interactive ${mergeRevisions[*]/r/-c } "$source"
+
+svn-wrapper merge --non-interactive ${mergeRevisions[*]/r/-c } "${mergeargs[@]}" "$source"
 status=$?   # Continue with building the commit message template; we might still want to commit after resolving any conflicts.
+
 
 relativeSource=$(svn info --non-interactive "$source" | sed -ne 's/^Relative URL: //p') || relativeSource=$source
 commitMessage=svn-commit.tmp
