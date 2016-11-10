@@ -10,6 +10,7 @@ HELPTEXT
 }
 
 typeset -a allargs=()
+typeset -a logargs=()
 typeset -a mergeargs=()
 typeset -a candidateRevisions=()
 isRevisionGiven=
@@ -22,6 +23,10 @@ do
 	--record-only|--dry-run|--ignore-ancestry|--allow-mixed-revisions)
 			mergeargs+=("$1"); shift;;
 	--accept)	mergeargs+=("$1" "$2"); shift; shift;;
+	--verbose|-v|--regexp-ignore-case|-i|--extended-regexp|-E|--fixed-strings|-F)
+			logargs+=("$1"); shift;;
+	--grep|--author|--limit|-l)
+			logargs+=("$1" "$2"); shift;;
 	*)		allargs+=("$1"); shift;;
     esac
 done
@@ -43,14 +48,14 @@ else
 fi
 
 
-typeset -a mergeRevisions=($(svn-log --format revisionsonly "${allargs[@]}" ${candidateRevisions[*]/r/-c } "$source"))
+typeset -a mergeRevisions=($(svn-log --format revisionsonly "${allargs[@]}" "${logargs[@]}" ${candidateRevisions[*]/r/-c } "$source"))
 if [ ${#mergeRevisions[@]} -le 0 ]; then
     echo >&2 "No revisions to merge."
     exit 1
 fi
 
 
-svn-wrapper merge --non-interactive ${mergeRevisions[*]/r/-c } "${mergeargs[@]}" "$source"
+svn-wrapper merge --non-interactive ${mergeRevisions[*]/r/-c } "${allargs[@]}" "${mergeargs[@]}" "$source"
 status=$?   # Continue with building the commit message template; we might still want to commit after resolving any conflicts.
 
 
@@ -58,12 +63,12 @@ relativeSource=$(svn info --non-interactive "$source" | sed -ne 's/^Relative URL
 commitMessage=svn-commit.tmp
 if [ ${#mergeRevisions[@]} -eq 1 ]; then
     printf 'Merge %s from %s: ' "${mergeRevisions[0]}" "$relativeSource"
-    eval 'svn-log --format noheader "${allargs[@]}"' ${mergeRevisions[*]/r/-c } '"$source"'
+    eval 'svn-log --format noheader "${allargs[@]}" "${logargs[@]}"' ${mergeRevisions[*]/r/-c } '"$source"'
 else
     IFS=','
     mergeRevisionsList="${mergeRevisions[*]/r/ r}"
     printf 'Merge revisions %s from %s\n\n' "${mergeRevisionsList# }" "$relativeSource"
-    eval 'svn-log --format merge "${allargs[@]}"' ${mergeRevisions[*]/r/-c } '"$source"'
+    eval 'svn-log --format merge "${allargs[@]}" "${logargs[@]}"' ${mergeRevisions[*]/r/-c } '"$source"'
 fi > "$commitMessage"
 
 exit $status
