@@ -5,7 +5,10 @@ printUsage()
     cat <<HELPTEXT
 Find merge candidates in SOURCE that still needs merging into the working copy,
 and merge them back.
-Usage: "$(basename "$1")" [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] SOURCE[@REV] [-?|-h|--help]
+If the merge aborts with a conflict in between, just re-execute the same command
+with the --continue argument added; this avoids that the original commit message
+template (for all merged revisions) gets overwritten.
+Usage: "$(basename "$1")" [--continue] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] SOURCE[@REV] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -14,6 +17,7 @@ typeset -a logargs=()
 typeset -a mergeargs=()
 typeset -a candidateRevisions=()
 isRevisionGiven=
+isContinue=
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
@@ -21,6 +25,7 @@ while [ $# -gt 1 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--continue)	shift; isContinue=t;;
 	--change|-c)	shift; candidateRevisions+=("$1"); shift; isRevisionGiven=t;;
 	--revision|-r)	shift; candidateRevisions+=("$1"); shift; isRevisionGiven=t;;
 	--record-only|--dry-run|--ignore-ancestry|--allow-mixed-revisions)
@@ -61,9 +66,14 @@ fi
 svn-wrapper merge --non-interactive ${mergeRevisions[*]/r/-c } "${allargs[@]}" "${mergeargs[@]}" "$source"
 status=$?   # Continue with building the commit message template; we might still want to commit after resolving any conflicts.
 
+commitMessage=svn-commit.tmp
+if [ "$isContinue" -a -e "$commitMessage" ]; then
+    # The commit message template has already been created; do not override it
+    # with the now reduced number of still outstanding merge revisions.
+    exit $status
+fi
 
 relativeSource=$(svn info --non-interactive "$source" | sed -ne 's/^Relative URL: //p') || relativeSource=$source
-commitMessage=svn-commit.tmp
 if [ ${#mergeRevisions[@]} -eq 1 ]; then
     printf 'Merge %s from %s: ' "${mergeRevisions[0]}" "$relativeSource"
     eval 'svn-log --format noheader "${allargs[@]}" "${logargs[@]}"' ${mergeRevisions[*]/r/-c } '"$source"'
