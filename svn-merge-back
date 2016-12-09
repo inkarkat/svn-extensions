@@ -29,7 +29,7 @@ do
 	--verbose|-v|--regexp-ignore-case|-i|--extended-regexp|-E|--fixed-strings|-F)
 			logargs+=("$1"); shift;;
 	--grep|--author|--limit|-l)
-			logargs+=("$1" "$2"); shift;;
+			logargs+=("$1" "$2"); shift; shift;;
 	*)		allargs+=("$1"); shift;;
     esac
 done
