@@ -136,35 +136,21 @@ case $answer in
     *)	    exit 1;;
 esac
 
-# Note: Use a similar syntax for the temp file name to aid file type detection
-# by the editor.
-TMPFILE=$(mktemp --tmpdir "svn-commit-XXXXXX.tmp" 2>/dev/null || echo "${TEMP:-/tmp}/svn-commit-$$.tmp")
-cleanup()
-{
-    # Something went wrong when TMPFILE still exists; move it back to the saved
-    # commit message so that the process can be repeated.
-    [ -r "$TMPFILE" ] && mv -- "$TMPFILE" "$commitMessage" 2>/dev/null
-}
-[ "$DEBUG" ] || trap 'cleanup' EXIT
-mv -- "$commitMessage" "$TMPFILE" || exit $?
-
 if [ "$answer" = 'e' ]; then
-    if ! "$EDITOR" "$TMPFILE"; then
-	echo 2>&1 "Unclean exit of editor; aborting, with the message back in ${commitMessage}!"
+    if ! "$EDITOR" "$commitMessage"; then
 	status=$?
-	cleanup
+	echo 2>&1 "Unclean exit of editor; aborting, with the message remaining in ${commitMessage}!"
 	exit $status
     fi
 fi
 
 # Remove the boilerplate ...
-sed -i -e "/${boilerplateStartLinePattern}/{g;q}" "$TMPFILE"
+sed -i -e "/${boilerplateStartLinePattern}/{g;q}" "$commitMessage"
 # ... and any trailing blank lines at the end of the message.
-sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$TMPFILE"
+sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$commitMessage"
 
-if svnCommit --file "$TMPFILE" "$@"; then
-    # Remove the temporary message file after a successful commit to avoid that
-    # the cleanup reinstates it as the original saved commit message.
-    rm -- "$TMPFILE" 2>/dev/null
+if svnCommit --file "$commitMessage" "$@"; then
+    # Remove the comit message file after a successful commit.
+    rm -- "$commitMessage" 2>/dev/null
     exit 0
 fi
