@@ -1,0 +1,49 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show a summary of the last commits recorded in my working copy.
+Usage: "$(basename "$1")" [-n|-l|--limit N] [-r|--revision] [PATH] [-?|-h|--help]
+-n, -l, --limit N   Show the last N commits.
+-r, --revision	    Only print the revision; omit the summary.
+HELPTEXT
+}
+
+limit=10
+isRevisionOnly=
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--limit|-l|-n)	shift; limit="$1"; shift;;
+	--revision|-r)	shift; isRevisionOnly=t;;
+	--)		shift; break;;
+	-*)		{ echo "ERROR: Unknown option \"$1\"!"; echo; printUsage "$0"; } >&2; exit 2;;
+	*)		break;;
+    esac
+done
+wcpath=
+if [ $# -eq 1 ]; then
+    wcpath=$1
+elif [ $# -gt 1 ]; then
+    printUsage "$0"
+    exit 2
+fi
+
+rootdir=$(svn-root "$wcpath") || exit $?
+if [ "$isRevisionOnly" -a $limit -eq 1 -a -r "${rootdir}/.svn/last-commit" ]; then
+    cat "${rootdir}/.svn/last-commit"
+else
+    dataFilespec="${rootdir}/.svn/commits"
+    if [ ! -r "$dataFilespec" ]; then
+	echo >&2 "ERROR: Commit data does not exist at $dataFilespec"
+	exit 1
+    fi
+
+    if [ "$isRevisionOnly" ]; then
+	tail --lines "$limit" "$dataFilespec" | sed -e 's/[ \t].*$//'
+    else
+	tail --lines "$limit" "$dataFilespec"
+    fi
+fi
