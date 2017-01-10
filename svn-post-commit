@@ -195,6 +195,13 @@ eval "$parsedLogEntry"
 
 
 
+# Record last committed revision and summary of all commits.
+rootdir=$(svn-root "$committedFile") && [ "$passedRevision" ] && {
+    printf 'r%s\n' "${passedRevision#r}" > "${rootdir}/.svn/last-commit"
+    printf 'r%s\t%s\n' "${passedRevision#r}" "$summary" >> "${rootdir}/.svn/commits"
+}
+
+
 case "$summary" in
     Merge\ of\ QCCR*)
 	extractDefectId
