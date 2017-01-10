@@ -12,7 +12,14 @@ case "$1" in
 esac
 
 set -o pipefail
-dirspec=$(cd "${1:-.}" && echo "$PWD")
+if [ -z "$1" ]; then
+    wcpath=.
+elif [ -d "$1" ]; then
+    wcpath=$1
+else
+    wcpath="$(dirname -- "$1")"
+fi
+dirspec=$(cd "$wcpath" && echo "$PWD")
 if [ -d "${dirspec}/.svn" ]; then
     # Detection for Subversion <= 1.6 (where there are .svn directories in every
     # directory of the working copy), or when in the working copy root.
