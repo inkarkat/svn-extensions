@@ -16,7 +16,7 @@ printf > ~/.svn-post-commit_last '%s %s' "$passedRevision" "$committedFile" # St
 
 extractTaskId()
 {
-    taskId=$(printf %s "$summary" | sed -e 's/^\(QCRQ[0-9A-Z]\+\).*$/\1/')
+    taskId=$(printf %s "$summary" | sed -e "s/^${1:?}.*\$/\1/")
 }
 extractDefectId()
 {
@@ -249,10 +249,17 @@ EOF
 	searchAllReposForPreviousMentions
 	;;
     QCRQ*)
-	extractTaskId
-echo "**** This is task $taskId"
+	extractTaskId '\(QCRQ[0-9A-Z]\+\)'
+echo "**** This is ALM task $taskId"
 	output <<EOF
-${revision}: ${summary#$taskId: }
+${revision}: ${summary#${taskId}: }
+EOF
+	;;
+    AGM*)
+	extractTaskId 'AGM\([0-9]\+\)'
+echo "**** This is Agile Manager task $taskId"
+	output <<EOF
+${revision}: ${summary#AGM${taskId}: }
 EOF
 	;;
 
