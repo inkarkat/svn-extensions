@@ -20,9 +20,9 @@ do
 			# N:M
 			N=${1%:*}
 			M=${1#*:}
-			if [ ! "$M" ]; then
+			if [ ! "${M#r}" ]; then
 			    changes+=("-$N")
-			elif [ $N -gt $M ]; then
+			elif [ ${N#r} -gt ${M#r} ]; then
 			    revisions+=("$1")
 			else
 			    revisions+=("$M:$N")
