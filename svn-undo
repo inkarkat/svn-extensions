@@ -41,3 +41,25 @@ fi
 # The working copy should be up to date, at a single revision.
 svn-up "${allargs[@]}" || exit $?
 svn merge ${revisions:+--revision} "${revisions[@]}" ${changes:+--change} "${changes[@]}" "${allargs[@]}"
+status=$?   # Continue with building the commit message template; we might still want to commit after resolving any conflicts.
+
+commitMessage=svn-commit.tmp
+if [ -e "$commitMessage" ]; then
+    # The commit message template has already been created; do not override it
+    # with the now reduced number of still outstanding merge revisions.
+    exit $status
+fi
+
+typeset -a mergeRevisions=("${changes[@]/-/}" "${revisions[@]}")
+if [ ${#mergeRevisions[@]} -eq 1 -a "${mergeRevisions[*]//:/}" = "${mergeRevisions[*]}" ]; then
+    printf 'Revert %s: ' "r${mergeRevisions[0]#r}"
+    eval 'svn-log --format noheader' "${mergeRevisions[@]/#/-r }" '"${allargs[@]}"'
+else
+    mergeRevisionsList="${mergeRevisions[*]//r/}"
+    mergeRevisionsList="r${mergeRevisionsList/ /, r}"
+    mergeRevisionsList="${mergeRevisionsList/:/:r}"
+    printf 'Revert revisions %s\n\n' "${mergeRevisionsList}"
+    eval 'svn-log --format merge' "${mergeRevisions[@]/#/-r }" '"${allargs[@]}"'
+fi > "$commitMessage"
+
+exit $status
