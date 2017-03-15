@@ -27,8 +27,8 @@ do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--continue)	shift; isContinue=t;;
-	--change|-c)	shift; candidateRevisions+=("$1"); shift; isRevisionGiven=t;;
-	--revision|-r)	shift; candidateRevisions+=("$1"); shift; isRevisionGiven=t;;
+	--change|-c)	shift; candidateRevisions+=("r${1#r}"); shift; isRevisionGiven=t;;
+	--revision|-r)	shift; candidateRevisions+=("r${1#r}"); shift; isRevisionGiven=t;;
 	--record-only)
 			action='Record merge of'
 			mergeargs+=("$1"); shift;;
