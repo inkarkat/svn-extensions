@@ -174,4 +174,4 @@ $line"
     process "$file" "$contents"
 }
 
-chunkify | less --quit-on-intr --RAW-CONTROL-CHARS
+chunkify | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS

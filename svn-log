@@ -355,10 +355,10 @@ if [ "$isXmlOutput" ]; then
     # then.
     [ "$mergeFilter" = 'cat' -a "$grepFilter" = 'cat' ] || echo >&2 "Warning: filtering is not supported with XML output."
 
-    svn log --non-interactive "${allargs[@]}" | less --RAW-CONTROL-CHARS
+    svn log --non-interactive "${allargs[@]}" | "${PAGER:-less}" --RAW-CONTROL-CHARS
     exit $?
 fi
-svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pipe') | $reformatFilter | $mergeFilter | $grepFilter | $limitFilter | $colorize | less --RAW-CONTROL-CHARS
+svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pipe') | $reformatFilter | $mergeFilter | $grepFilter | $limitFilter | $colorize | "${PAGER:-less}" --RAW-CONTROL-CHARS
 status=$?
 [ $status -eq 141 -a "$limitFilter" = 'limitFilter' ] && status=0   # Ignore "svn: Write error: Broken pipe"
 exit $status

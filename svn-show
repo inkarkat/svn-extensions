@@ -39,5 +39,5 @@ else
     for revision in "${revisions[@]}"
     do
 	svn-wrapper log --incremental --change "$revision" "${allargs[@]}" && svn-dp --change "$revision" "${diffargs[@]}" "${allargs[@]}"
-    done | less --quit-on-intr --RAW-CONTROL-CHARS
+    done | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS
 fi

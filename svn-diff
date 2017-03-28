@@ -94,7 +94,7 @@ elif [ "$hasColorDiff" ]; then
     # svn only pipes the diff output itself, but not the diff header ("Index:
     # ...") through colordiff, and therefore the header isn't highlighted with
     # the "cvsstuff" group in .colordiffrc.
-    eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | colordiff | less --quit-on-intr --RAW-CONTROL-CHARS
+    eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | colordiff | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS
 else
-    eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | less --quit-on-intr --RAW-CONTROL-CHARS
+    eval svn diff --non-interactive $svnDiffOptions '"${allargs[@]}"' | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS
 fi

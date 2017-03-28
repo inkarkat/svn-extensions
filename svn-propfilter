@@ -151,4 +151,4 @@ $line"
 	printUsage "$0"
 	exit 2
 	;;
-esac | if [ "$hasColorDiff" ]; then colordiff; else cat; fi | less --quit-on-intr --RAW-CONTROL-CHARS
+esac | if [ "$hasColorDiff" ]; then colordiff; else cat; fi | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS

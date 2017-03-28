@@ -81,4 +81,4 @@ else
     p
 }
 '
-fi | sort -k 2 -u | less --quit-on-intr --RAW-CONTROL-CHARS
+fi | sort -k 2 -u | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS

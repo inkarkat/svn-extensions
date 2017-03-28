@@ -104,4 +104,4 @@ END {
 	    printf "%6s  %s\n", commitCount[author], author firstCommitIndicator
     }
 }
-' | colorize | less --quit-on-intr --RAW-CONTROL-CHARS
+' | colorize | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS

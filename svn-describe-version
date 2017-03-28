@@ -32,4 +32,4 @@ for revision in "${revisions[@]}"
 do
     version=$(svn --non-interactive cat --revision "$revision" "${repositoryUrl}/${SVN_PRODUCT_VERSION_PATH}") || exit $?
     printf '%s.%s\n' "$version" "$revision"
-done | less --quit-on-intr --RAW-CONTROL-CHARS
+done | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS

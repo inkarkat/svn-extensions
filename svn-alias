@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-List all svn command extensions and newly defined commands. 
+List all svn command extensions and newly defined commands.
 Usage: "$(basename "$1")" [-?|-h|--help]
 HELPTEXT
 }
@@ -19,11 +19,11 @@ for svnalias in "$scriptDir/"svn-*
 do
     [ -x "$svnalias" ] || continue
 
-    # Filter out backup files. 
+    # Filter out backup files.
     case "$(basename -- "$svnalias")" in
 	    *.[1-2][0-9][0-9][0-9][0-9][0-9][0-9][0-9][a-z])    continue;;
-    esac 
+    esac
 
     echo "[01m${svnalias##*svn-}[0m"
     sed -e '1,/<<HELPTEXT$/d;/^Usage: /d;/^HELPTEXT$/{s/.*//;q}' "$svnalias"
-done | less --quit-on-intr --RAW-CONTROL-CHARS
+done | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS

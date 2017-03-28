@@ -141,4 +141,4 @@ svn log --non-interactive --quiet --verbose --xml "$filespec" | \
     while IFS=$'\n' read -r line
     do
 	processRevision "$line"
-    done | less --quit-on-intr --raw-control-chars # XXX: With --RAW-CONTROL-CHARS, less somehow doesn't take coloring over multiple lines.
+    done | "${PAGER:-less}" --quit-on-intr --raw-control-chars # XXX: With --RAW-CONTROL-CHARS, less somehow doesn't take coloring over multiple lines.

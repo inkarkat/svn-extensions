@@ -134,4 +134,4 @@ svn log --non-interactive "${allargs[@]}" 2> >(grep -Fv 'Write error: Broken pip
     s/\n//g
     p
 }
-' | $filter | $limitFilter | $reverseFilter | $colorize | less --RAW-CONTROL-CHARS
+' | $filter | $limitFilter | $reverseFilter | $colorize | "${PAGER:-less}" --RAW-CONTROL-CHARS

@@ -242,7 +242,7 @@ if [ ! "$isDiff" -a ! "$propFilterMethod" ]; then
     # handshaking with the Subversion server) to launch "svn log" with all
     # revisions instead of doing this separately for each revision.
     [ "$limit" ] && limitArg="${limit}q" || limitArg=
-    getRevisions | sed -e 's/^/-c /' ${limitArg:+-e} ${limitArg} | xargs --no-run-if-empty svn-wrapper log --incremental "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}" | $nonRecursivePathsFilter | less --RAW-CONTROL-CHARS
+    getRevisions | sed -e 's/^/-c /' ${limitArg:+-e} ${limitArg} | xargs --no-run-if-empty svn-wrapper log --incremental "${colorargs[@]}" "${verboseArgs[@]}" "${allargs[@]}" | $nonRecursivePathsFilter | "${PAGER:-less}" --RAW-CONTROL-CHARS
     exit $?
 fi
 
@@ -303,4 +303,4 @@ do
     fi
 
     [ "$limit" ] && [ $revisionCnt -ge $limit ] && break
-done; [ "$revisionCnt" -gt 0 ]; } | $nonRecursivePathsFilter | less --RAW-CONTROL-CHARS
+done; [ "$revisionCnt" -gt 0 ]; } | $nonRecursivePathsFilter | "${PAGER:-less}" --RAW-CONTROL-CHARS

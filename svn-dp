@@ -135,8 +135,8 @@ else
 	diffHandlingMoves $revision "${statArgs[@]}" "${allargs[@]}"
     done | \
 	if [ "$isPipeThroughStat" ]; then
-	    diffstat $diffStatArgs | less --quit-on-intr --RAW-CONTROL-CHARS
+	    diffstat $diffStatArgs | "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS
 	else
-	    less --quit-on-intr --RAW-CONTROL-CHARS
+	    "${PAGER:-less}" --quit-on-intr --RAW-CONTROL-CHARS
 	fi
 fi

@@ -79,4 +79,4 @@ svn log --non-interactive "${allargs[@]}" | sed --unbuffered -ne '
     s/\n//g
     p
 }
-' | $filter | colorize | less --RAW-CONTROL-CHARS
+' | $filter | colorize | "${PAGER:-less}" --RAW-CONTROL-CHARS
