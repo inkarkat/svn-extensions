@@ -36,7 +36,7 @@ while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--no-merge)	shift; filter="grep --line-buffered -iv ${SVN_MERGE_COMMENT_PATTERN}";;
+	--no-merge)	shift; filter="grep --line-buffered -iv \"\${SVN_MERGE_COMMENT_PATTERN}\"";;
 	--no-color)	shift; isNoColor='true';;
 	--summary|-s)	shift; isSummary='true';;
 	*)
@@ -52,7 +52,7 @@ do
     unset allargs[-1]
 done
 if [ ${#files[@]} -gt 1 ]; then
-    # Strip off duplicate commits that cover multiple files; for the AWL
+    # Strip off duplicate commits that cover multiple files; for the AWK
     # reporting, it's important that the list remains sorted descending by
     # revision number.
     filter="$filter | sort -t '|' -k 2 -r -u"
