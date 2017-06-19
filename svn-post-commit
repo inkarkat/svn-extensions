@@ -114,7 +114,7 @@ EOF
     # empty lines to maintain the structure.
     local IFS=$'\n'
     typeset uniqueDescriptions=$(printf '%s\n' "${descriptions[*]}" | awk -e '/^$/{print}' -e '!x[$0]++' | cat -s)
-    modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchName")
+    modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchFullName")
 
     if [ "$hasPreviousMentions" ]; then
 	highestRevision=${revisions##*, }
@@ -211,7 +211,7 @@ echo "**** Merge of $defectId"
 	IFS=$'\n'
 	output <<EOF
 MODIFIED FILES (repository, branch and revision; per release):
-$revision on ${nonDefaultRepository}$branchName
+$revision on ${nonDefaultRepository}$branchFullName
 
 FIXED FOR VERSION:
 ${fixedVersions[*]}
@@ -236,7 +236,7 @@ SOLUTION:
 ${interestingCommitSummary% }${description[*]}
 
 MODIFIED FILES (repository, branch and revision; per release):
-$revision on ${nonDefaultRepository}$branchName
+$revision on ${nonDefaultRepository}$branchFullName
 
 AFFECTED PROGRAMS/SCRIPTS/LIBRARIES:
 ${defaultAffected[*]}
