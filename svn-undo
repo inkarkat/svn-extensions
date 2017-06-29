@@ -15,7 +15,14 @@ while [ $# -ne 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--change|-c)	shift; changes+=("-${1#-}"); shift;;
+	--change|-c)	shift
+			if [ ${#changes[@]} -eq 0 ]; then
+			    changes=("-${1#-}")
+			else
+			    changes=("${changes[0]},-${1#-}")
+			fi
+			shift
+			;;
 	--revision|-r)	shift
 			# N:M
 			N=${1%:*}
@@ -50,7 +57,14 @@ if [ -e "$commitMessage" ]; then
     exit $status
 fi
 
-typeset -a mergeRevisions=("${changes[@]/-/}" "${revisions[@]}")
+reformattedChanges="${changes[0]//-/}"
+if [ "$reformattedChanges" ]; then
+    typeset -a changesList=(${reformattedChanges//,/ })
+else
+    typeset -a changesList=()
+fi
+
+typeset -a mergeRevisions=("${changesList[@]}" "${revisions[@]}")
 if [ ${#mergeRevisions[@]} -eq 1 -a "${mergeRevisions[*]//:/}" = "${mergeRevisions[*]}" ]; then
     printf 'Revert %s: ' "r${mergeRevisions[0]#r}"
     eval 'svn-log --format noheader' "${mergeRevisions[@]/#/-r }" '"${allargs[@]}"'
