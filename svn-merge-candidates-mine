@@ -1,0 +1,24 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Show merge candidates of my commits in SOURCE that still needs merging into the
+working copy. One-line log messages with date and commit summary.
+-R, --reverse	Show in reverse order.
+-v, --verbose	Show full log.
+--no-list-date	Omit the date from the log.
+--no-color	Turn off color highlighting.
+HELPTEXT
+printf 'Usage: %q %s\n' "$(basename "$1")" '[-R|--reverse] [-v|--verbose] [--no-list-date] [--no-color] SOURCE[@REV] [-?|-h|--help]'
+}
+case "$1" in
+    --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+esac
+
+authorSupplementOption='--no-list-author'   # This is only available for the default svn-lg, not for svn-log (used with -v).
+case "$1" in
+    --verbose|-v)   authorSupplementOption=
+esac
+
+exec svn-merge-candidates $authorSupplementOption --author "${SVNUSER:-$USER}" "$@"
