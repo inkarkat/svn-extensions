@@ -20,7 +20,7 @@ extractTaskId()
 }
 extractDefectId()
 {
-    defectId=$(printf %s "$summary" | sed -e 's/^\(Merge of \)\?\(QCCR[0-9A-Z]\+\)\(: .*\)\?$/\2/' -e t -e 's/\(QCCR[0-9A-Z]\+\).*$/\1/' -e 's/^.*\(QCCR[0-9A-Z]\+\)/\1/')
+    defectId=$(printf %s "$summary" | sed -e 's/^\(Merge \(of \)\?\)\?\(QCCR[0-9A-Z]\+\)\(:\? .*\)\?$/\3/' -e t -e 's/\(QCCR[0-9A-Z]\+\).*$/\1/' -e 's/^.*\(QCCR[0-9A-Z]\+\)/\1/')
 }
 getRepoInformation()
 {
@@ -107,7 +107,7 @@ SOLUTION:
 ${interestingCommitSummary% }${description[*]}
 
 EOF
-    done < <((svn-lg --non-interactive --no-color --no-list-author --no-list-date --server "$repoRoot"; svn-lg --non-interactive --no-color --no-list-author --no-list-date ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep "^r[0-9]\+ \([^[:space:]]\+: \)*\(Merge of \)\?${defectId}: ")
+    done < <((svn-lg --non-interactive --no-color --no-list-author --no-list-date --server "$repoRoot"; svn-lg --non-interactive --no-color --no-list-author --no-list-date ${SVN_COMMIT_MENTIONS_SEARCH_LIMIT:+--limit "$SVN_COMMIT_MENTIONS_SEARCH_LIMIT"} "$repoRoot") | GREP_OPTIONS= grep "^r[0-9]\+ \([^[:space:]]\+: \)*\(Merge \(of \)\?\)\?${defectId}:\? ")
 
     # Remove duplicate description lines; keep the first one (from the oldest
     # commit). Later commits often just append to the description. Keep (single)
@@ -203,7 +203,7 @@ rootdir=$(svn-root "$committedFile") && [ "$passedRevision" ] && {
 
 
 case "$summary" in
-    Merge\ of\ QCCR*)
+    Merge\ of\ QCCR*|Merge\ QCCR*)
 	extractDefectId
 echo "**** Merge of $defectId"
 	getFullRepoInformation "$mainRepoRoot" "$passedRevision"
