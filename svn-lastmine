@@ -24,4 +24,4 @@ case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 esac
 
-svn-wrapper last --author "${SVNUSER:-$USER}" "$@"
+exec svn-last --author "${SVNUSER:-$USER}" "$@"
