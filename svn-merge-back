@@ -3,7 +3,7 @@
 printUsage()
 {
     cat <<HELPTEXT
-Find merge candidates in SOURCE that still needs merging into the working copy,
+Find merge candidates in SOURCE that still need merging into the working copy,
 and merge them back.
 If the merge aborts with a conflict in between, just re-execute the same command
 with the --continue argument added; this avoids that the original commit message
