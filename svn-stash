@@ -12,7 +12,7 @@ pop:    Apply and the topmost stashed commit onto the working copy and remove it
 drop:   Remove a single stash.
 clear:  Throw away all stashes.
 create:	Just create a patch, but do not revert the working copy.
-Usage: "$(basename "$1")" [list|apply|pop|drop|clear|create] [-n|--name NAME] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
+Usage: "$(basename "$1")" [list|apply|pop|drop|clear|create] [-n|--name NAME [-f|--force]] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -82,6 +82,7 @@ case $1 in
 	    ;;
 esac
 
+isForce=
 typeset -a allargs=()
 typeset name="stash-$(date +%Y%m%d-%H%M%S)"
 [ "$1" = 'create' ] && { shift; isRevert=; }
@@ -90,6 +91,7 @@ do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	--name|-n)	shift; name="$1"; shift;;
+	--force|-f)	shift; isForce=t;;
 	*)		allargs+=("$1")
 			shift
 			;;
@@ -100,6 +102,11 @@ done
 [ -w "$stashDir" ] || { echo >&2 "Cannot write to stashes directory: ${PWD%/}/$stashDir"; exit 1; }
 
 readonly stashFilespec="${stashDir}/${name}.patch"
+if [ -e "$stashFilespec" -a ! "$isForce" ]; then
+    read -p "${name}.patch already exists; overwrite? (y/n) " choice
+    [ "$choice" = 'y' ] || exit 1
+fi
+
 svn-diff --no-color --patch-compatible "${allargs[@]}" > "$stashFilespec" || exit $?
 diffstat -C "$stashFilespec"
 if [ "$isRevert" ]; then
