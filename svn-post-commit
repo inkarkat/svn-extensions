@@ -94,12 +94,17 @@ searchForPreviousMentions()
 
 	if [ ${#description[@]} -gt 0 ]; then
 	    descriptions=("${description[@]}" "(r${logRevision#r})" "" "${descriptions[@]}")
-	fi
 
-	local interestingCommitSummary=$(getInterestingCommitSummary)
-	if [ "$interestingCommitSummary" ]; then
-	    descriptions=("${interestingCommitSummary% }" "${descriptions[@]}")
-	    laterSummary=
+	    local interestingCommitSummary=$(getInterestingCommitSummary)
+	    if [ "$interestingCommitSummary" ]; then
+		descriptions=("${interestingCommitSummary% }" "${descriptions[@]}")
+		laterSummary=
+	    fi
+	else
+	    # There's no detailed description;  include the summary in all (also
+	    # non-interesting) cases to avoid that this revision gets completely
+	    # ignored.
+	    descriptions=("${summary/${defectId}: /}" "(r${logRevision#r})" "" "${descriptions[@]}")
 	fi
 
 	local IFS=$'\n'
