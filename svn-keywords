@@ -40,7 +40,7 @@ do
 	    svn propset svn:keywords "$props" "$filespec" || exit $?
 	    echo >&2 "Defined the following svn:keywords used in the file: $props"
 	else
-	    echo >&2 "WARNING: No svn:keywords defined, but the file contains such!"
+	    echo >&2 "WARNING: No svn:keywords defined, but the file contains such: $filespec"
 	fi
 	NL=$'\n'
     fi
