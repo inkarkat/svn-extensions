@@ -25,6 +25,20 @@ readonly SVN_KEYWORD_PATTERN='\$\(Date\|LastChangedDate\|Revision\|Rev\|LastChan
 NL=
 for filespec
 do
+    if [ -d "$filespec" ]; then
+	typeset -a subFilespecs=()
+	for subs in "${filespec%/}"/*
+	do
+	    [ -d "$subs" ] || subFilespecs+=("$subs")
+	done
+
+	if [ ${#subFilespecs[@]} -gt 0 ]; then
+	    [ $# -gt 1 ] && printf '%s' "${NL}"
+	    "$0" "${subFilespecs[@]}"
+	fi
+	continue
+    fi
+
     [ $# -gt 1 ] && echo "${NL}${filespec}:"
 
     isKeywordsFound=
