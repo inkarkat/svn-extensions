@@ -3,8 +3,8 @@
 printUsage()
 {
     cat <<HELPTEXT
-Show used and configured svn:keywords of passed FILE.
-Usage: "$(basename "$1")" [--fixit] FILE [-?|-h|--help]
+Show used and configured svn:keywords of passed FILE(s).
+Usage: "$(basename "$1")" [--fixit] FILE [...] [-?|-h|--help]
 HELPTEXT
 }
 isFixit=
