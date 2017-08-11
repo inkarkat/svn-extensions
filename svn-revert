@@ -1,0 +1,26 @@
+#!/bin/bash
+
+printUsage()
+{
+    cat <<HELPTEXT
+Revert changes in the working copy, possibly to an older revision.
+Usage: "$(basename "$1")" [-c M[,N...] | -r N:M ...] [SOURCE[@REV]] [-?|-h|--help]
+HELPTEXT
+}
+
+revertToRevision()
+{
+    exec svn-cherrypick --accept theirs-full "$@"
+}
+
+
+for arg
+do
+    case "$arg" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--change|-c)	revertToRevision "$@";;
+	--revision|-r)	revertToRevision "$@";;
+    esac
+done
+
+exec svn revert "$@"
