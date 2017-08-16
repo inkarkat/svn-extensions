@@ -127,17 +127,21 @@ EOF
     typeset uniqueDescriptions=$(printf '%s\n' "${descriptions[*]}" | awk -e '/^$/{print}' -e '!x[$0]++' | cat -s)
     modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchFullName")
 
-    if [ "$hasPreviousMentions" ]; then
-	highestRevision=${revisions##*, }
-	highestRevision=${highestRevision#r}
-	getFullRepoInformation "$repoRoot" "$highestRevision"
-	highestFixedVersion=$(echo "${fixedVersions[*]}" | sort -n | tail -n 1)
+    if [ ! "$hasPreviousMentions" ]; then
+	echo "**** none found."
+	return
+    fi
 
-	echo "**** combined $defectId"
-	local IFS=$'\n'
-	case "$format" in
-	    full)
-		output <<EOF
+    highestRevision=${revisions##*, }
+    highestRevision=${highestRevision#r}
+    getFullRepoInformation "$repoRoot" "$highestRevision"
+    highestFixedVersion=$(echo "${fixedVersions[*]}" | sort -n | tail -n 1)
+
+    echo "**** combined $defectId"
+    local IFS=$'\n'
+    case "$format" in
+	full)
+	    output <<EOF
 TECHNICAL PROBLEM DESCRIPTION:
 $problemDescription
 
@@ -167,11 +171,8 @@ ${defaultAffected[*]}
 FIXED FOR VERSION:
 $highestFixedVersion
 EOF
-		;;
-	esac
-    else
-	echo "**** none found."
-    fi
+	    ;;
+    esac
 }
 
 output()
