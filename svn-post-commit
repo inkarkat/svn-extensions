@@ -125,7 +125,7 @@ EOF
     # empty lines to maintain the structure.
     local IFS=$'\n'
     typeset uniqueDescriptions=$(printf '%s\n' "${descriptions[*]}" | awk -e '/^$/{print}' -e '!x[$0]++' | cat -s)
-    modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchFullName")
+    [ "$revisions" ] && modifiedFiles+=("$revisions on ${nonDefaultRepository}$branchFullName")
 
     if [ ! "$hasPreviousMentions" ]; then
 	echo "**** none found."
