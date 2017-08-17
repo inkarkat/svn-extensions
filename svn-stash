@@ -13,7 +13,7 @@ pop:    Apply and the topmost stashed commit onto the working copy and remove it
 drop:   Remove a single stash.
 clear:  Throw away all stashes.
 create:	Just create a patch, but do not revert the working copy.
-Usage: "$(basename "$1")" [list|show|apply|pop|drop|clear|create] [-n|--name NAME [-f|--force]] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
+Usage: "$(basename "$1")" [list|show [--no-color]|apply|pop|drop|clear|create] [-n|--name NAME [-f|--force]] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -48,6 +48,21 @@ apply()
     return $status
 }
 
+# Highlight diff output if available.
+hasColorDiff=
+type -t colordiff >/dev/null && hasColorDiff=t
+checkNoColorArg()
+{
+    case "$1" in
+	--no-color)
+	    shift
+	    hasColorDiff=
+	    return 0
+	    ;;
+    esac
+    return 1
+}
+
 rootdir=$(svn-root) || exit $?
 cd "$rootdir" || exit $?
 readonly stashDir='.svn/stashes'
@@ -64,8 +79,14 @@ case $1 in
 	    exit $?
 	    ;;
     show)   shift
+	    checkNoColorArg "$1" && shift
+	    checkNoColorArg "$3"    # Arguments 1 and 2 are -n NAME then.
 	    lastPatchFile=$(getLastPatch "$@") || exit $?
-	    "${PAGER:-less}" "$lastPatchFile"
+	    if [ "$hasColorDiff" ]; then
+		cat "$lastPatchFile" | colordiff | "${PAGER:-less}" --RAW-CONTROL-CHARS
+	    else
+		cat "$lastPatchFile" | "${PAGER:-less}" --RAW-CONTROL-CHARS
+	    fi
 	    exit $?
 	    ;;
     apply)  shift
