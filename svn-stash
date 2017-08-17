@@ -7,12 +7,13 @@ Save the full dirty working copy in a temporary patch (named NAME) and revert
 it. Instead of creating a stash, you can also pass one of the following
 subcommands:
 list:   Show all stashed commits.
+show:	Show the changes recorded in the stash as a diff.
 apply:  Apply the topmost stashed commit onto the working copy.
 pop:    Apply and the topmost stashed commit onto the working copy and remove it from the stash.
 drop:   Remove a single stash.
 clear:  Throw away all stashes.
 create:	Just create a patch, but do not revert the working copy.
-Usage: "$(basename "$1")" [list|apply|pop|drop|clear|create] [-n|--name NAME [-f|--force]] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
+Usage: "$(basename "$1")" [list|show|apply|pop|drop|clear|create] [-n|--name NAME [-f|--force]] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
 }
 
@@ -60,6 +61,11 @@ case $1 in
 		printf '%s\n' "$file"
 		diffstat -C "$file"
 	    done
+	    exit $?
+	    ;;
+    show)   shift
+	    lastPatchFile=$(getLastPatch "$@") || exit $?
+	    "${PAGER:-less}" "$lastPatchFile"
 	    exit $?
 	    ;;
     apply)  shift
