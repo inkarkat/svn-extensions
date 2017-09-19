@@ -151,7 +151,7 @@ ${uniqueDescriptions}
 MODIFIED FILES (repository, branch and revision; per release):
 ${modifiedFiles[*]}
 
-AFFECTED PROGRAMS/SCRIPTS/LIBRARIES:
+AFFECTED PROGRAMS/ SCRIPTS/ LIBRARIES ETC:
 ${defaultAffected[*]}
 
 DOCUMENTATION CHANGE:
@@ -165,7 +165,7 @@ EOF
 MODIFIED FILES (repository, branch and revision; per release):
 ${modifiedFiles[*]}
 
-AFFECTED PROGRAMS/SCRIPTS/LIBRARIES:
+AFFECTED PROGRAMS/ SCRIPTS/ LIBRARIES ETC:
 ${defaultAffected[*]}
 
 FIXED FOR VERSION:
@@ -267,7 +267,7 @@ ${interestingCommitSummary% }${description[*]}
 MODIFIED FILES (repository, branch and revision; per release):
 $revision on ${nonDefaultRepository}$branchFullName
 
-AFFECTED PROGRAMS/SCRIPTS/LIBRARIES:
+AFFECTED PROGRAMS/ SCRIPTS/ LIBRARIES ETC:
 ${defaultAffected[*]}
 
 DOCUMENTATION CHANGE:
