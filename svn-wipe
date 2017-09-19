@@ -1,0 +1,13 @@
+#!/bin/bash
+
+isForce=
+case $1 in
+    --force|-f)	shift; isForce=t;;
+esac
+if [ ! "$isForce" ] && [ "$(svn status --non-interactive -q "$@")" ]; then
+    echo "Uncommitted changes:"
+    svn status --non-interactive -q "$@"
+    exit 1
+fi
+
+exec svn revert -R "${@:-.}"
