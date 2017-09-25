@@ -1,10 +1,44 @@
 #!/bin/bash
 
-if [[ $# -eq 0 || "${!#}" = -* ]]; then
-    svn status "$@"
-else
-    set -o pipefail
+printUsage()
+{
+    cat <<HELPTEXT
+Print the status [matching FIELD_MATCH] of working copy files.
+By default skips 'X': a versioned file created by an eXternals definition.
+Usage: "$(basename "$1")" [-q|--quiet ...] [--match FIELD_MATCH] [PATH] [-?|-h|--help]
+HELPTEXT
+}
 
+typeset -a allargs=()
+typeset match='[^X]'
+while [ $# -ne 0 ]
+do
+    case "$1" in
+	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--match)	shift; match="$1"; shift;;
+	--)		shift; break;;
+	*)		allargs+=("$1")
+			shift
+			;;
+    esac
+done
+
+set -o pipefail
+ignoreNonStatusLines()
+{
+    # Filter out stuff like "Performing status on external item at 'foo':"
+    GREP_OPTIONS= grep '^....... '
+    return 0
+}
+filterStatus()
+{
+    GREP_OPTIONS= grep "^${match}"
+    return 0
+}
+
+if [[ ${#allargs[@]} -eq 0 || "${allargs[${#allargs[@]}]}" = -* ]]; then
+    svn status "${allargs[@]}" | ignoreNonStatusLines | filterStatus
+else
     TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
     cleanup()
     {
@@ -12,14 +46,14 @@ else
     }
     [ "$DEBUG" ] || trap 'cleanup' EXIT
 
-    svn status "$@" | tee "$TMPFILE" || exit $?
+    svn status "${allargs[@]}" | ignoreNonStatusLines | filterStatus | tee "$TMPFILE" || exit $?
 
     if [ ! -s "$TMPFILE" ]; then
 	# Support extended "svn-status PATTERN" variant. But first ensure that
 	# the last argument is not a PATH, and the CWD indeed is a Subversion
 	# working copy.
-	svn info "${@:1:$(($#-1))}" >/dev/null 2>&1 || exit 0
-	searchArg=${!#}
-	svn status "${@:1:$(($#-1))}" | GREP_OPTIONS= grep -i "$searchArg"
+	svn info "${allargs[@]:1:${#allargs[@]}-2}" >/dev/null 2>&1 || exit 0
+	searchArg=${allargs[-1]}
+	svn status "${allargs[@]:1:${#allargs[@]}-2}" | ignoreNonStatusLines | filterStatus | GREP_OPTIONS= grep -i "$searchArg"
     fi
 fi

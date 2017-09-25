@@ -10,28 +10,4 @@ Usage: "$(basename "$1")" [-q|--quiet ...] [--match FIELD_MATCH] [PATH] [-?|-h|-
 HELPTEXT
 }
 
-typeset -a allargs=()
-typeset match='[^X]'
-while [ $# -ne 0 ]
-do
-    case "$1" in
-	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	--match)	shift; match="$1"; shift;;
-	--)		shift; break;;
-	*)		allargs+=("$1")
-			shift
-			;;
-    esac
-done
-
-ignoreNonStatusLines()
-{
-    # Filter out stuff like "Performing status on external item at 'foo':"
-    GREP_OPTIONS= grep '^....... '
-}
-
-if [ "$match" ]; then
-    exec svn-wrapper status "${allargs[@]}" | ignoreNonStatusLines | GREP_OPTIONS= grep "^${match}" | cut -c 9-
-else
-    exec svn-wrapper status "${allargs[@]}" | ignoreNonStatusLines | cut -c 9-
-fi
+exec svn-wrapper status "$@" | cut -c 9-
