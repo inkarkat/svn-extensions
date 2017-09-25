@@ -81,6 +81,14 @@ if [ "$isContinue" -a -e "$commitMessage" ]; then
     exit $status
 fi
 
+# Even when no --record-only has been passed (which seems to have bad
+# consequences in re-introducing any non-root mergeinfos if they are still
+# anywhere in the version tree; although svn help merge just inoccuously
+# documents this option as "merge only mergeinfo differences"), this may be a
+# record-only merge if only the (svn:merge) properties of the toplevel directory
+# is modified. Correct the action for the commit message template.
+[ "$(svn-status --match '[^?X]' "${allargs[@]}")" = ' M      .' ] && action='Record merge of'
+
 relativeSource=$(svn info --non-interactive "$source" | sed -ne 's/^Relative URL: //p') || relativeSource=$source
 if [ ${#mergeRevisions[@]} -eq 1 ]; then
     printf '%s %s from %s: ' "$action" "${mergeRevisions[0]}" "$relativeSource"
