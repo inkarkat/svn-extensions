@@ -166,7 +166,7 @@ do
 			;;
 	--no-diff)	shift; isDiff=;;
 	--no-log)	shift; isLog=;;
-	-b|--ignore-space-change|-w|--ignore-all-space|--ignore-eol-style|-p|--show-c-function|--stat|--numstat|--shortstat)
+	-b|--ignore-space-change|-w|--ignore-all-space|--ignore-eol-style|-p|--show-c-function|--stat|--numstat|--shortstat|--force)
 			diffargs+=("$1"); shift;;
 	*)
 	    if [ "$isServerRevisions" -a -d "$1" ]; then
