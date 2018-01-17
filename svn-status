@@ -50,10 +50,11 @@ else
 
     if [ ! -s "$TMPFILE" ]; then
 	# Support extended "svn-status PATTERN" variant. But first ensure that
-	# the last argument is not a PATH, and the CWD indeed is a Subversion
-	# working copy.
+	# the last argument is not a PATH and not a command-line option, and the
+	# CWD indeed is a Subversion working copy.
 	svn info "${allargs[@]:1:${#allargs[@]}-2}" >/dev/null 2>&1 || exit 0
-	searchArg=${allargs[-1]}
+	searchArg="${allargs[-1]}"
+	[ "${searchArg:0:1}" = '-' ] && exit
 	svn status "${allargs[@]:1:${#allargs[@]}-2}" | ignoreNonStatusLines | filterStatus | GREP_OPTIONS= grep -i "$searchArg"
     fi
 fi
