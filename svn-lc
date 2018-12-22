@@ -259,7 +259,7 @@ do
 		    fi
 		    ;;
 	    skip)   filterArg=--hide; filterScope=${propScope:-minimal};; # When there are only property changes, nothing will be returned.
-	    *)	    echo >&2 "ERROR: Invalid parameter for --props: $propFilterMethod"; printUsage "$0"; exit 2;;
+	    *)	    echo >&2 "ERROR: Invalid parameter for --props: $propFilterMethod"; printUsage "$0" >&2; exit 2;;
 	esac
 	[ "$propFilterPropertyNamePattern" ] && typeset -a propFilterArg=('--filter' "$propFilterPropertyNamePattern") || typeset -a propFilterArg=()
 

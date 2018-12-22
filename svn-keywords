@@ -18,7 +18,7 @@ do
 	*)		break;;
     esac
 done
-[ $# -eq 0 ] && { printUsage "$0"; exit 2; }
+[ $# -eq 0 ] && { printUsage "$0" >&2; exit 2; }
 
 readonly SVN_KEYWORD_PATTERN='\$\(Date\|LastChangedDate\|Revision\|Rev\|LastChangedRevision\|Author\|LastChangedBy\|HeadURL\|URL\|Id\|Header\)\(:.*\)\?\$'
 

@@ -41,7 +41,7 @@ do
     esac
 done
 source=$1
-[ $# -eq 0 -o ! "$source" ] && { printUsage "$0"; exit 2; }
+[ $# -eq 0 -o ! "$source" ] && { printUsage "$0" >&2; exit 2; }
 
 IFS=$'\n'
 typeset -a revisions=($(svn mergeinfo --non-interactive --show-revs eligible "$source" | tac))	# Subversion lists the revisions from oldest to newest; reverse this (cheap to do here) to have the same default sorting as svn log.
