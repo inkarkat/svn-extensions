@@ -1,18 +1,36 @@
 #!/bin/bash
 
+printShortUsage()
+{
+    # Note: short followed by long option; if the user knows the short one, she can
+    # skim the long one.
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-R|--reverse] [-v|--verbose] [--author REGEXP] [--no-list-author] [--no-list-date] [--no-color] SOURCE[@REV] [-?|-h|--help]'
+}
 printUsage()
 {
-    cat <<HELPTEXT
+    # This is the short help when launched with no or incorrect arguments.
+    # It is printed to stderr to avoid accidental processing.
+    printShortUsage "$1" >&2
+    printf >&2 'Try %q --help for more information.\n' "$(basename "$1")"
+}
+printLongUsage()
+{
+    # This is the long "man page" when launched with the help argument.
+    # It is printed to stdout to allow paging with 'more'.
+    cat <<HELPDESCRIPTION
 Show merge candidates in SOURCE that still needs merging into the working copy.
 One-line log messages with author, date and commit summary.
--R, --reverse	Show in reverse order.
--v, --verbose	Show full log.
---author REGEXP	Limit to commits by author.
---no-list-author Omit the author name from the log; happens automatically if
-		REGEXP is literal text.
---no-list-date	Omit the date from the log.
---no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [-R|--reverse] [-v|--verbose] [--author REGEXP] [--no-list-author] [--no-list-date] [--no-color] SOURCE[@REV] [-?|-h|--help]
+HELPDESCRIPTION
+    echo
+    printShortUsage "$1"
+    cat <<HELPTEXT
+    -R, --reverse	Show in reverse order.
+    -v, --verbose	Show full log.
+    --author REGEXP	Limit to commits by author.
+    --no-list-author	Omit the author name from the log; happens automatically
+			if REGEXP is literal text.
+    --no-list-date	Omit the date from the log.
+    --no-color		Turn off color highlighting.
 HELPTEXT
 }
 
@@ -21,7 +39,7 @@ typeset -a allargs=()
 while [ $# -ne 0 ]
 do
     case "$1" in
-	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
+	--help|-h|-\?)	shift; printLongUsage "$0"; exit 0;;
 	--verbose|-v)	if [ "$logCommand" = 'svn-log' ]; then
 			    # Allow pass-through of second -v to svn-log.
 			    allargs+=("$1")
@@ -41,7 +59,10 @@ do
     esac
 done
 source=$1
-[ $# -eq 0 -o ! "$source" ] && { printUsage "$0" >&2; exit 2; }
+if [ $# -eq 0 -o ! "$source" ]; then
+    printUsage "$0" >&2
+    exit 2
+fi
 
 IFS=$'\n'
 typeset -a revisions=($(svn mergeinfo --non-interactive --show-revs eligible "$source" | tac))	# Subversion lists the revisions from oldest to newest; reverse this (cheap to do here) to have the same default sorting as svn log.
