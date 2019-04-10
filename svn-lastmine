@@ -4,21 +4,23 @@ printUsage()
 {
     cat <<HELPTEXT
 Show last commit info of my last commit in the repository.
--v		Include a list of changed files.
---grep REGEXP   Limit the commits to ones with log message that matches the
-		specified pattern.
--i, --regexp-ignore-case
-		Match the regexp limiting patterns without regard to letters case.
--E, --extended-regexp
-		Consider the limiting patterns to be extended regular
-		expressions instead of the default basic regular expressions.
--F, --fixed-strings
-		Consider the limiting patterns to be fixed strings (don't
-		interpret pattern as a regular expression).
---no-merge	Exclude any commits that mention merge in the revision summary.
---no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--no-color] [PATH...] [-?|-h|--help]
+    -v		    Include a list of changed files.
+    --grep REGEXP   Limit the commits to ones with log message that matches the
+		    specified pattern.
+    -i, --regexp-ignore-case
+		    Match the regexp limiting patterns without regard to letters
+		    case.
+    -E, --extended-regexp
+		    Consider the limiting patterns to be extended regular
+		    expressions instead of the default basic regular expressions.
+    -F, --fixed-strings
+		    Consider the limiting patterns to be fixed strings (don't
+		    interpret pattern as a regular expression).
+    --no-merge	    Exclude any commits that mention merge in the revision
+		    summary.
+    --no-color	    Turn off color highlighting.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--no-merge] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--no-color] [PATH...] [-?|-h|--help]'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;

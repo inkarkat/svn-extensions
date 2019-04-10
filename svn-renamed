@@ -4,13 +4,14 @@ printUsage()
 {
     cat <<HELPTEXT
 List the new path after file moves and renames and the corresponding revision.
---server	Instead of local history, only consider server revisions that
-		you don't have yet.
---from		List the old path before the file move / rename in the revision
-		instead.
---omit-revision	Omit the revision from the output; just print the changed paths.
-Usage: "$(basename "$1")" [-r|--revision ARG] [-l|--limit ARG] [--from] [--omit-revision] [--server|PATH] [-?|-h|--help]
+    --server		Instead of local history, only consider server revisions
+			that you don't have yet.
+    --from		List the old path before the file move / rename in the
+			revision instead.
+    --omit-revision	Omit the revision from the output; just print the
+			changed paths.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-r|--revision ARG] [-l|--limit ARG] [--from] [--omit-revision] [--server|PATH] [-?|-h|--help]'
 }
 
 getRevisions()

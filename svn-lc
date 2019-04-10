@@ -5,37 +5,39 @@ printUsage()
     cat <<HELPTEXT
 Show logs together with diff between commits.
 Note: If you supply -c|--change REV, you can just as well use "svn show REV".
--v		Include a list of changed files.
--R, --reverse	Show in reverse order.
---grep REGEXP   Limit the commits to ones with log message that matches the
-		specified pattern.
--i, --regexp-ignore-case
-		Match the regexp limiting patterns without regard to letters case.
---author REGEXP	Limit to commits by author.
---prop only	Limit to commits that change properties.
---prop skip	Skip commits that only change properties.
---prop-scope minimal|file|diff
-		Override which part of the diff gets output when limiting to
-		property changes.
---prop-filter REGEXP
-		Limit to changes to properties matching REGEXP (e.g.
-		svn:mergeinfo); all other property names are ignored.
-#--no-merge	Exclude any commits that mention merge in the revision summary.
-		and non-recursive changes.
---non-recursive	Only show changes to PATH itself, omit changes to contained
-		files / directories. Useful when you only want to see file
-		additions / removals or only property changes on the directory
-		itself. Note that this means that only changes on the current
-		branch are reported.
---server	Instead of local history, only list server revisions that you
-		don't have yet.
---no-color	Turn off color highlighting.
---no-diff	Do not actually show the diff, just the log. In contrast to svn
-		log, you can use the superior filters for property changes.
---no-log	Do not actually show the log, just the diff. In contrast to svn
-		dp, you do not need to pass all revisions separately.
-Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [--prop-filter REGEXP] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]
+    -v		    Include a list of changed files.
+    -R, --reverse   Show in reverse order.
+    --grep REGEXP   Limit the commits to ones with log message that matches the
+		    specified pattern.
+    -i, --regexp-ignore-case
+		    Match the regexp limiting patterns without regard to letters
+		    case.
+    --author REGEXP Limit to commits by author.
+    --prop only	    Limit to commits that change properties.
+    --prop skip	    Skip commits that only change properties.
+    --prop-scope minimal|file|diff
+		    Override which part of the diff gets output when limiting to
+		    property changes.
+    --prop-filter REGEXP
+		    Limit to changes to properties matching REGEXP (e.g.
+		    svn:mergeinfo); all other property names are ignored.
+    #--no-merge	    Exclude any commits that mention merge in the revision
+		    #summary.
+    --non-recursive Only show changes to PATH itself, omit changes to contained
+		    files / directories. Useful when you only want to see file
+		    additions / removals or only property changes on the
+		    directory itself. Note that this means that only changes on
+		    the current branch are reported.
+    --server	    Instead of local history, only list server revisions that
+		    you don't have yet.
+    --no-color	    Turn off color highlighting.
+    --no-diff	    Do not actually show the diff, just the log. In contrast to
+		    svn log, you can use the superior filters for property
+		    changes.
+    --no-log	    Do not actually show the log, just the diff. In contrast to
+		    svn dp, you do not need to pass all revisions separately.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [--prop-filter REGEXP] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff|--no-log] [-?|-h|--help]'
 }
 
 getRevisions()

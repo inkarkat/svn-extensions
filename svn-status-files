@@ -6,8 +6,8 @@ printUsage()
 Print working copy files that have status [matching FIELD_MATCH].
 The output (newline-delimited filespecs) can be consumed by other tools.
 By default skips 'X': a versioned file created by an eXternals definition.
-Usage: "$(basename "$1")" [-q|--quiet ...] [--match FIELD_MATCH] [PATH] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-q|--quiet ...] [--match FIELD_MATCH] [PATH] [-?|-h|--help]'
 }
 
 exec svn-wrapper status "$@" | cut -c 9-

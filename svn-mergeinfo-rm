@@ -1,12 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
     cat <<HELPTEXT
 Remove svn:mergeinfo property from files below the current / passed repository's
 root that (wrongly) have such.
-Usage: "$(basename "$1")" [PATH] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[PATH] [-?|-h|--help]'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;

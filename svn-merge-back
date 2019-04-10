@@ -8,8 +8,8 @@ and merge them back.
 If the merge aborts with a conflict in between, just re-execute the same command
 with the --continue argument added; this avoids that the original commit message
 template (for all merged revisions) gets overwritten.
-Usage: "$(basename "$1")" [--continue] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] SOURCE[@REV] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--continue] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] SOURCE[@REV] [-?|-h|--help]'
 }
 
 typeset -a allargs=()

@@ -11,8 +11,8 @@ To specify a DATE:
     {"2006-02-17 15:30 +0230"}
     {2006-02-17T15:30Z}
     {20060217T1530-0500}
-Usage: "$(basename "$1")" [-r ARG1] URL[@REV]... [PATH] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-r ARG1] URL[@REV]... [PATH] [-?|-h|--help]'
 }
 
 case "$1" in

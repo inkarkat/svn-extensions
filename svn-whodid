@@ -4,13 +4,15 @@ printUsage()
 {
     cat <<HELPTEXT
 Show log grouped by name and sorted by the number of their commits.
---no-merge	Exclude any commits that mention merge in the revision summary.
---no-color	Turn off color highlighting.
--s|--summary	Show author names sorted by the number of their commits only.
+    --no-merge	    Exclude any commits that mention merge in the revision
+		    summary.
+    --no-color	    Turn off color highlighting.
+    -s|--summary    Show author names sorted by the number of their commits
+		    only.
 (*) denotes the first commit
 Note: svn log option -v is not supported here, but also doesn't make sense here.
-Usage: "$(basename "$1")" [--no-merge] [-s|--summary] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [PATH [PATH ...]] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--no-merge] [-s|--summary] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [PATH [PATH ...]] [-?|-h|--help]'
 }
 
 : ${SVN_MERGE_COMMENT_PATTERN:=merg\\(e\\|ed\\|es\\|ing\\|eback\\)\\b}

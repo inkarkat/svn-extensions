@@ -8,8 +8,8 @@ No trailing slashes.
 With --server, includes the full path from the repository root, including /trunk
 or any branches / tags.
 Else, prints the path within the working copy (no leading slash).
-Usage: "$(basename "$1")" [--server] [-?|-h|--help] [PATH...]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--server] [-?|-h|--help] [PATH...]'
 }
 isServer=
 case "$1" in

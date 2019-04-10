@@ -23,8 +23,8 @@ Default is working copy to last commit; use
 -r PREV:COMMITTED (or svn dp) to show change in previous commit, and
 -r REV:COMMITTED to show changes across revisions.
 
-Usage: "$(basename "$1")" [-b] [-w] [--context] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-b] [-w] [--context] [-c M | -r N[:M]] [--stat|--numstat|--shortstat] [--no-color] [TARGET[@REV]...] [-?|-h|--help]'
 }
 
 diffCommand=

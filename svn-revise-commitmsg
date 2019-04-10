@@ -1,13 +1,12 @@
 #!/bin/bash
-
 shopt -qs extglob
 
 printUsage()
 {
     cat <<HELPTEXT
 Edit the commit message of the passed revision and update it.
-Usage: "$(basename "$1")" [[-r|--revision] REV [[-r|--revision] REV ...]] [TARGET] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[[-r|--revision] REV [[-r|--revision] REV ...]] [TARGET] [-?|-h|--help]'
 }
 
 typeset -a allargs=()

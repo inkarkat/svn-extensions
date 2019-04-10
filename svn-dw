@@ -16,8 +16,8 @@ printUsage()
 Diff with word-based (not line-based) diff granularity.
 Delegates to the dwdiff / wdiff tool (the latter only supports the
 -s|--statistics argument).
-Usage: "$(basename "$1")" [-c M | -r N[:M]] [--no-color] [-d DELIMITERS|--delimiters=DELIMITERS] [-P|--punctuation] [-L<WIDTH>|--line-numbers=WIDTH] [-C<NUM>|--context=NUM] [-s|--statistics] [-m<NUM>|--match-context=NUM] [--aggregate-changes] [-A ALGORITHM|--algorithm=ALGORITHM] [-S[MARKER]|--paragraph-separator[=MARKER]] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-c M | -r N[:M]] [--no-color] [-d DELIMITERS|--delimiters=DELIMITERS] [-P|--punctuation] [-L<WIDTH>|--line-numbers=WIDTH] [-C<NUM>|--context=NUM] [-s|--statistics] [-m<NUM>|--match-context=NUM] [--aggregate-changes] [-A ALGORITHM|--algorithm=ALGORITHM] [-S[MARKER]|--paragraph-separator[=MARKER]] [TARGET[@REV]...] [-?|-h|--help]'
 }
 
 # The wdiff tool does not support certain arguments that svn diff passes.

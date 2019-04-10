@@ -1,40 +1,41 @@
 #!/bin/bash
-
 shopt -qs extglob 2>/dev/null
 
 printUsage()
 {
     cat <<HELPTEXT
 Detailed log messages.
--v		Include a list of changed files.
---grep REGEXP   Limit the commits to ones with log message that matches the
-		specified pattern.
--i, --regexp-ignore-case
-		Match the regexp limiting patterns without regard to letters case.
--E, --extended-regexp
-		Consider the limiting patterns to be extended regular
-		expressions instead of the default basic regular expressions.
--F, --fixed-strings
-		Consider the limiting patterns to be fixed strings (don't
-		interpret pattern as a regular expression).
---author REGEXP	Limit to commits by author.
---no-merge	Exclude any commits that mention merge in the revision summary.
-#--non-recursive
-		Only show changes to PATH itself, omit changes to contained
-		files / directories. Supported through "svn lc".
---server	Instead of local history, only list server revisions that you
-		don't have yet.
---no-color	Turn off color highlighting.
---format FORMAT Output in a particular format. Implies --no-color. Supported
-		formats:
-		revisionsonly:  Only the list of revisions (one per line), i.e.
-				use the tool only for its filtering
-				capabilities.
-		noheader:	Omit the revision, author, and date. Just print
-				the message and optional file list.
-		merge:		Shortened format for commits of merges.
-Usage: "$(basename "$1")" [--no-merge] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [--no-color|--format FORMAT] [-?|-h|--help]
+    -v		    Include a list of changed files.
+    --grep REGEXP   Limit the commits to ones with log message that matches the
+		    specified pattern.
+    -i, --regexp-ignore-case
+		    Match the regexp limiting patterns without regard to letters
+		    case.
+    -E, --extended-regexp
+		    Consider the limiting patterns to be extended regular
+		    expressions instead of the default basic regular expressions.
+    -F, --fixed-strings
+		    Consider the limiting patterns to be fixed strings (don't
+		    interpret pattern as a regular expression).
+    --author REGEXP Limit to commits by author.
+    --no-merge	    Exclude any commits that mention merge in the revision
+		    summary.
+    #--non-recursive
+		    Only show changes to PATH itself, omit changes to contained
+		    files / directories. Supported through "svn lc".
+    --server	    Instead of local history, only list server revisions that
+		    you don't have yet.
+    --no-color	    Turn off color highlighting.
+    --format FORMAT Output in a particular format. Implies --no-color. Supported
+		    formats:
+		    revisionsonly:  Only the list of revisions (one per line),
+				    i.e. use the tool only for its filtering
+				    capabilities.
+		    noheader:	    Omit the revision, author, and date. Just
+				    print the message and optional file list.
+		    merge:	    Shortened format for commits of merges.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--no-merge] [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--server|PATH...] [--no-color|--format FORMAT] [-?|-h|--help]'
 }
 
 reformatter()

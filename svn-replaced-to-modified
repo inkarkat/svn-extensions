@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
     cat <<HELPTEXT
 Cancel a Replaced file status and turn it to the normal Modified.
-Usage: "$(basename "$1")" [-?|-h|--help] PATH...
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help] PATH...'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;

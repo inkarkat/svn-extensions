@@ -1,12 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
     cat <<HELPTEXT
 Include the entire, recursive PATH or everything in the current directory in
-future updates of the working copy. 
-Usage: "$(basename "$1")" [PATH...] [-?|-h|--help]
+future updates of the working copy.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[PATH...] [-?|-h|--help]'
 }
 
 case "$1" in

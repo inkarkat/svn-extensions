@@ -1,5 +1,4 @@
 #!/bin/bash
-
 shopt -qs extglob 2>/dev/null
 
 printUsage()
@@ -9,8 +8,8 @@ Show log message and textual diff for a particular commit.
 With -b (ignore space change) and -w (ignore all white space) options.
 Can also show statistics with --stat, --numstat and --shortstat.
 --no-color	Turn off colored diff.
-Usage: "$(basename "$1")" [-b] [-w] [[-r|--revision] REV [[-r|--revision] REV ...]] [--stat|--numstat|--shortstat] [--no-color] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-b] [-w] [[-r|--revision] REV [[-r|--revision] REV ...]] [--stat|--numstat|--shortstat] [--no-color] [-?|-h|--help]'
 }
 
 typeset -a allargs=()

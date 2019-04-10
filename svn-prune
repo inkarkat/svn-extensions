@@ -1,16 +1,16 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
     cat <<HELPTEXT
 Remove PATH or all files in the current directory from the working copy, and
-skip them on future updates. 
+skip them on future updates.
 Note: To check whether a directory has been pruned, use
     svn info | grep ^Depth:
       To list the pruned files, use
     svn ls
-Usage: "$(basename "$1")" [PATH...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[PATH...] [-?|-h|--help]'
 }
 
 case "$1" in

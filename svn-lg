@@ -1,23 +1,23 @@
 #!/bin/bash
-
 shopt -qs extglob 2>/dev/null
 
 printUsage()
 {
     cat <<HELPTEXT
 One-line log messages with author, date and commit summary.
--R, --reverse	Show in reverse order.
---no-merge	Exclude any commits that mention merge in the revision summary.
---author REGEXP	Limit to commits by author.
---no-list-author Omit the author name from the log; happens automatically if
-		REGEXP is literal text.
---no-list-date	Omit the date from the log.
---no-color	Turn off color highlighting.
---server	Instead of local history, only list server revisions that you
-		don't have yet.
+    -R, --reverse	Show in reverse order.
+    --no-merge		Exclude any commits that mention merge in the revision
+			summary.
+    --author REGEXP	Limit to commits by author.
+    --no-list-author	Omit the author name from the log; happens automatically if
+			REGEXP is literal text.
+    --no-list-date	Omit the date from the log.
+    --no-color		Turn off color highlighting.
+    --server		Instead of local history, only list server revisions
+			that you don't have yet.
 Note: svn log option -v is not supported here, but also doesn't make sense here.
-Usage: "$(basename "$1")" [-R|--reverse] [--no-merge] [--author REGEXP] [--no-list-author] [--no-list-date] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--no-color] [--server] [PATH...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-R|--reverse] [--no-merge] [--author REGEXP] [--no-list-author] [--no-list-date] [-c M | -r N[:M]] [-g|--use-merge-history] [-l|--limit ARG] [--no-color] [--server] [PATH...] [-?|-h|--help]'
 }
 
 : ${SVN_MERGE_COMMENT_PATTERN:=merg\\(e\\|ed\\|es\\|ing\\|eback\\)\\b}

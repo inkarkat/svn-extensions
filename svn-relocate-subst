@@ -5,8 +5,8 @@ printUsage()
     cat <<HELPTEXT
 Rewrite working copy URL metadata, replacing the first occurrence of PATTERN
 with REPLACEMENT.
-Usage: "$(basename "$1")" PATTERN REPLACEMENT [PATH...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" 'PATTERN REPLACEMENT [PATH...] [-?|-h|--help]'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;

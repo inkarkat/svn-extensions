@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Allows svn-* scripts to invoke other svn-* scripts (or itself recursively :-)
 # if they exist. This is necessary because the svn alias / svn() function from
 # aliases.sh is not active inside a shell script. (And I also do not want other
@@ -9,8 +9,8 @@ printUsage()
 {
     cat <<HELPTEXT
 Internal helper script.
-Usage: "$(basename "$1")" alias|command [ARGS...]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" 'alias|command [ARGS...]'
 }
 
 svnAlias="svn-$1"

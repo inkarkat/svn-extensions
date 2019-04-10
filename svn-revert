@@ -4,8 +4,8 @@ printUsage()
 {
     cat <<HELPTEXT
 Revert changes in the working copy, possibly to an older revision.
-Usage: "$(basename "$1")" [-c M[,N...] | -r N:M ...] [SOURCE[@REV]] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-c M[,N...] | -r N:M ...] [SOURCE[@REV]] [-?|-h|--help]'
 }
 
 revertToRevision()

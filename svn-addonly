@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
     cat <<HELPTEXT
 Put single files under version control, without recursing into subdirs.
-Usage: "$(basename "$1")" [-?|-h|--help] PATH...
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help] PATH...'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;

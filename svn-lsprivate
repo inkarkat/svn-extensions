@@ -6,8 +6,8 @@ printUsage()
 List unversioned files. Show a summary for unversioned directories
 or with -l|--long-format the entire subdir contents.
 With -x|--no-ignore also ignored files.
-Usage: "$(basename "$1")" [-l|--long-format] [-x|--no-ignore] [PATH...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-l|--long-format] [-x|--no-ignore] [PATH...] [-?|-h|--help]'
 }
 
 isLongFormat=

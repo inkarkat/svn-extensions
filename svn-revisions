@@ -4,8 +4,8 @@ printUsage()
 {
     cat <<HELPTEXT
 Extract all Subversion revisions from stdin, and present them one per line.
-Usage: "$(basename "$1")" [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help]'
 }
 
 case "$1" in

@@ -7,8 +7,8 @@ Display a list of committers sorted by the frequency of commits.
 Limit reporting to a revision range via -r N (recent until N), -r M:N,
 a number of commits via -l N, or since a date via --since DATE or explicitly
 via -r {startDate}:{endDate}.
-Usage: "$(basename "$1")" [-r ARG1[:ARG2] | -l|--limit N | --since DATE] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-r ARG1[:ARG2] | -l|--limit N | --since DATE] [TARGET[@REV]...] [-?|-h|--help]'
 }
 
 reportingRange=

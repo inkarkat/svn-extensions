@@ -1,12 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
     cat <<HELPTEXT
-Put files under version control by copying the history of an existing element. 
-Usage: "$(basename "$1")" [-?|-h|--help] SRC[@REV] PATH...
-Example: "$(basename "$1")" path/to/{Original,Cloned}File.txt
+Put files under version control by copying the history of an existing element.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-?|-h|--help] SRC[@REV] PATH...'
+    printf 'Example: %q %s\n' "$(basename "$1")" 'path/to/{Original,Cloned}File.txt'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;
@@ -23,7 +23,7 @@ do
 	# Subversion already knows about the file. To check whether it has just
 	# been added to Subversion, we could grep the "svn info" output for
 	# "Schedule: add", or "Revision: 0", or we ask "svn list" whether it
-	# already exists in a revision. 
+	# already exists in a revision.
 	if svn list --non-interactive "$filespec" >/dev/null 2>&1; then
 	    echo >&2 "${filespec}: already exists as a revision (use svn rm first)"
 	    status=1; continue

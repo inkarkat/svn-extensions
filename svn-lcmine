@@ -1,12 +1,12 @@
-#!/bin/sh
+#!/bin/bash
 
 printUsage()
 {
     cat <<HELPTEXT
 Show logs together with diff between my commits.
 Like "svn lc" filtered for my personal commits.
-Usage: "$(basename "$1")" [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [--prop only|skip [--prop-scope minimal|file|diff]] [-r|--revision ARG] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [--no-diff] [-?|-h|--help]'
 }
 case "$1" in
     --help|-h|-\?)	shift; printUsage "$0"; exit 0;;

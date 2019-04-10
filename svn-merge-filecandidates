@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -o pipefail
 
 printUsage()
@@ -7,8 +6,8 @@ printUsage()
     cat <<HELPTEXT
 Show files in SOURCE that still needs merging into the working copy.
 Listing of files with author(s) and revision(s) they appear in.
-Usage: "$(basename "$1")" [-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] SOURCE[@REV] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-v|--verbose] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [-E|--extended-regexp|-F|--fixed-strings] [--author REGEXP] [-c M | -r N[:M]] [-l|--limit ARG] SOURCE[@REV] [-?|-h|--help]'
 }
 
 : ${COLOR_REVISION:='[36m'}

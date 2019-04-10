@@ -4,8 +4,8 @@ printUsage()
 {
     cat <<HELPTEXT
 Show used and configured svn:keywords of passed FILE(s).
-Usage: "$(basename "$1")" [--fixit] FILE [...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--fixit] FILE [...] [-?|-h|--help]'
 }
 isFixit=
 while [ $# -ne 0 ]

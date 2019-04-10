@@ -13,8 +13,8 @@ pop:    Apply and the topmost stashed commit onto the working copy and remove it
 drop:   Remove a single stash.
 clear:  Throw away all stashes.
 create:	Just create a patch, but do not revert the working copy.
-Usage: "$(basename "$1")" [list|show [--no-color]|apply|pop|drop|clear|create] [-n|--name NAME [-f|--force]] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[list|show [--no-color]|apply|pop|drop|clear|create] [-n|--name NAME [-f|--force]] [-b] [-w] [-c M | -r N[:M]] [TARGET[@REV]...] [-?|-h|--help]'
 }
 
 getLastPatch()

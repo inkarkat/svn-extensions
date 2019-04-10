@@ -3,13 +3,13 @@ printUsage()
 {
     cat <<HELPTEXT
 Annotate a log of property changes with the revision and author.
---prop-filter REGEXP
-		Limit to changes to properties matching REGEXP (e.g.
-		svn:mergeinfo); all other property names are ignored.
---include-date	Include the commit date.
---include-log	Include the full log message for each commit.
-Usage: "$(basename "$1")" [--prop-filter REGEXP] [--include-date] [--include-log] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [-?|-h|--help]
+    --prop-filter REGEXP
+		    Limit to changes to properties matching REGEXP (e.g.
+		    svn:mergeinfo); all other property names are ignored.
+    --include-date	Include the commit date.
+    --include-log	Include the full log message for each commit.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--prop-filter REGEXP] [--include-date] [--include-log] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--non-recursive] [--server|PATH] [--no-color] [-?|-h|--help]'
 }
 
 : ${COLOR_REVISION:='[36m'}

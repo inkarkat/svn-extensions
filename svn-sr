@@ -6,9 +6,9 @@ printUsage()
     cat <<HELPTEXT
 Show server revisions, i.e. whether there are new revisions on the server and
 you should update your working copy.
---no-color	Turn off color highlighting.
-Usage: "$(basename "$1")" [--no-color] [TARGET[@REV]...] [-?|-h|--help]
+    --no-color	Turn off color highlighting.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--no-color] [TARGET[@REV]...] [-?|-h|--help]'
 }
 typeset isNoColor=
 case "$1" in

@@ -6,8 +6,8 @@ printUsage()
 Duplicate something in working copy or repository, remembering history.
 Use --force to avoid the error that the DST already exists.
 Use --retroactive to just link the SRC history to an existing cloned copy.
-Usage: "$(basename "$1")" [-f|--force] [--retroactive] [-?|-h|--help] SRC[@REV]... DST
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-f|--force] [--retroactive] [-?|-h|--help] SRC[@REV]... DST'
 }
 
 deleteExistingFile()

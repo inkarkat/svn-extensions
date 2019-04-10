@@ -9,8 +9,8 @@ Minimal one-line log messages with commit summary.
 --server	Instead of local history, only list server revisions that you
 		don't have yet.
 Note: svn log option -v is not supported here, but also doesn't make sense here.
-Usage: "$(basename "$1")" [--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--no-merge] [-c M | -r N[:M]] [-l|--limit ARG] [--no-color] [--server|PATH...] [-?|-h|--help]'
 }
 
 : ${SVN_MERGE_COMMENT_PATTERN:=merg\\(e\\|ed\\|es\\|ing\\|eback\\)\\b}

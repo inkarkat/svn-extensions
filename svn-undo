@@ -4,8 +4,8 @@ printUsage()
 {
     cat <<HELPTEXT
 Undo a (range of) commits by doing a reverse merge.
-Usage: "$(basename "$1")" [-c M[,N...] | -r N:M ...] [SOURCE[@REV]] [-?|-h|--help]
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-c M[,N...] | -r N:M ...] [SOURCE[@REV]] [-?|-h|--help]'
 }
 
 typeset -a allargs=()

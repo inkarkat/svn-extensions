@@ -3,10 +3,10 @@ printUsage()
 {
     cat <<HELPTEXT
 Annotate merge information with the revision and author.
---include-date	Include the commit date.
---include-log	Include the full log message for each commit.
-Usage: "$(basename "$1")" [--include-date] [--include-log] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--server|PATH] [--no-color] [-?|-h|--help]
+    --include-date	Include the commit date.
+    --include-log	Include the full log message for each commit.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[--include-date] [--include-log] [--grep REGEXP [--grep ...]] [-i|--regexp-ignore-case] [--author REGEXP] [-r|--revision ARG|-R|--reverse] [-l|--limit ARG] [--server|PATH] [--no-color] [-?|-h|--help]'
 }
 
 case "$1" in

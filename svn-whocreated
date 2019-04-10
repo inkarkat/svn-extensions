@@ -4,12 +4,12 @@ printUsage()
 {
     cat <<HELPTEXT
 Show who created / renamed the passed file.
--v		Include a list of all changed files in the commit(s) that
-		created PATH.
---no-color	Turn off color highlighting.
--s|--summary	Show only author names and date, not the full commit message.
-Usage: "$(basename "$1")" [-s|--summary] [-v|--verbose] [--no-color] PATH [-?|-h|--help]
+    -v		    Include a list of all changed files in the commit(s) that
+		    created PATH.
+    --no-color	    Turn off color highlighting.
+    -s|--summary    Show only author names and date, not the full commit message.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-s|--summary] [-v|--verbose] [--no-color] PATH [-?|-h|--help]'
 }
 
 : ${COLOR_HEADER:='[34m'}

@@ -4,10 +4,12 @@ printUsage()
 {
     cat <<HELPTEXT
 Show a summary of the last commits recorded in my working copy.
-Usage: "$(basename "$1")" [-n|-l|--limit N] [-r|--revision] [PATH] [-?|-h|--help]
--n, -l, --limit N   Show the last N commits.
--r, --revision	    Only print the revision; omit the summary.
 HELPTEXT
+    printf 'Usage: %q %s\n' "$(basename "$1")" '[-n|-l|--limit N] [-r|--revision] [PATH] [-?|-h|--help]'
+    cat <<HELPOPTIONS
+    -n, -l, --limit N   Show the last N commits.
+    -r, --revision	Only print the revision; omit the summary.
+HELPOPTIONS
 }
 
 limit=10
