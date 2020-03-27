@@ -6,18 +6,4 @@ These are some personal aliases, shortcuts, and extensions that make (my) work w
 
 Download all / some selected extensions (note that some have dependencies, though) and put them somewhere in your `PATH`. You can then invoke them via `svn-SUBCOMMAND`.
 
-Optionally, use the following (Bash, but should also work in Korn shell and Dash) shell function (e.g. in your `.bashrc`) to transparently invoke the extensions in the same way as the built-in kubectl commands, via `svn SUBCOMMAND`:
-
-    # Allow definition of Subversion aliases (e.g. "svn foo") by putting an
-    # executable "svn-foo" somewhere in the PATH.
-    svn() {
-        typeset -r svnAlias="svn-$1"
-        if [ $# -eq 0 ]; then
-            svn ${SVN_DEFAULT_COMMAND:-st}
-        elif type ${BASH_VERSION:+-t} "$svnAlias" >/dev/null 2>&1; then
-            shift
-            eval $svnAlias '"$@"'
-        else
-            command svn "$@"
-        fi
-    }
+It is recommended to also use the (Bash, but should also work in Korn shell and Dash) shell functions (e.g. in your `.bashrc`) found at [shell/wrappers.sh](shell/wrappers.sh) to transparently invoke the extensions in the same way as the built-in Subversion commands, via `svn SUBCOMMAND`.
