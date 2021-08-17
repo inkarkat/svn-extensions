@@ -6,7 +6,7 @@ svn()
 {
     typeset svnAlias="svn-$1"
     if [ $# -eq 0 ]; then
-	svn ${SVN_DEFAULT_COMMAND:-st}
+	command svn ${SVN_DEFAULT_COMMAND:-st}
     elif type ${BASH_VERSION:+-t} "$svnAlias" >/dev/null 2>&1; then
 	shift
 	eval $svnAlias '"$@"'
