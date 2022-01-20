@@ -9,7 +9,7 @@ svn()
 	command svn ${SVN_DEFAULT_COMMAND:-st}
     elif type ${BASH_VERSION:+-t} "$svnAlias" >/dev/null 2>&1; then
 	shift
-	eval $svnAlias '"$@"'
+	$svnAlias "$@"
     else
 	command svn "$@"
     fi
