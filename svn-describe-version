@@ -24,7 +24,10 @@ done
 
 set -o pipefail
 if [ ${#revisions[@]} -eq 0 ]; then
-    revisions+=($(svn info --non-interactive "$SVN_REPO_ROOT" | sed -n -e 's/^Revision: \(.*\)$/\1/p')) || exit $?
+    readarray -t revisions < <(svn info --non-interactive "$SVN_REPO_ROOT" | sed -n -e 's/^Revision: \(.*\)$/\1/p'; printf '\n%d\n' "$?")	# Exit status from the process substitution is lost; return the actual exit status via an appended additional line.
+    [ ${revisions[-1]} -ne 0 ] && exit ${revisions[-1]}
+    unset 'revisions[-1]'
+    [ -z "${revisions[-1]}" ] && unset 'revisions[-1]'
 fi
 
 repositoryUrl=$(svn-url "$SVN_REPO_ROOT") || exit $?

@@ -14,10 +14,9 @@ esac
 
 [ $# -gt 0 ] || { printUsage "$0"; exit 1; }
 
-IFS=$'\n'
-typeset -a paths=($(svn-status-files --quiet --match A | tac))
+readarray -t paths < <(svn-status-files --quiet --match A | tac)
 if [ ${#paths[@]} -eq 0 ]; then
-    echo >&2 "No files are scheduled for addition."
+    echo >&2 'No files are scheduled for addition.'
     svn-wrapper status "$@"
     exit 1
 fi

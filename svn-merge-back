@@ -49,14 +49,12 @@ done
 source=$1
 [ $# -eq 0 -o ! "$source" ] && { printUsage "$0" >&2; exit 2; }
 
-IFS=$'\n'
-
 if [ "$isRevisionGiven" ]; then
     printf >&2 'Considering passed %d revision(s).\n' "${#candidateRevisions[@]}"
 else
-    typeset -a candidateRevisions=($(svn mergeinfo --non-interactive --show-revs eligible "$source"))
+    readarray -t candidateRevisions < <(svn mergeinfo --non-interactive --show-revs eligible "$source")
     if [ ${#candidateRevisions[@]} -eq 0 ]; then
-	echo >&2 "No merge candidates found"
+	echo >&2 'No merge candidates found'
 	exit 1
     fi
 
@@ -64,9 +62,9 @@ else
 fi
 
 
-typeset -a mergeRevisions=($(svn-log --format revisionsonly "${allargs[@]}" "${logargs[@]}" ${candidateRevisions[*]/r/-c } "$source"))
+readarray -t mergeRevisions < <(svn-log --format revisionsonly "${allargs[@]}" "${logargs[@]}" ${candidateRevisions[*]/r/-c } "$source")
 if [ ${#mergeRevisions[@]} -le 0 ]; then
-    echo >&2 "No revisions to merge."
+    echo >&2 'No revisions to merge.'
     exit 1
 fi
 
@@ -89,7 +87,7 @@ fi
 # is modified. Correct the action for the commit message template.
 [ "$(svn-status --match '[^?X]' "${allargs[@]}")" = ' M      .' ] && action='Record merge of'
 
-relativeSource=$(svn info --non-interactive "$source" | sed -ne 's/^Relative URL: //p') || relativeSource=$source
+relativeSource="$(svn info --non-interactive "$source" | sed -ne 's/^Relative URL: //p')" || relativeSource="$source"
 if [ ${#mergeRevisions[@]} -eq 1 ]; then
     printf '%s %s from %s: ' "$action" "${mergeRevisions[0]}" "$relativeSource"
     eval 'svn-log --format noheader "${allargs[@]}" "${logargs[@]}"' ${mergeRevisions[*]/r/-c } '"$source"'

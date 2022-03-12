@@ -64,10 +64,9 @@ if [ $# -eq 0 -o ! "$source" ]; then
     exit 2
 fi
 
-IFS=$'\n'
-typeset -a revisions=($(svn mergeinfo --non-interactive --show-revs eligible "$source" | tac))	# Subversion lists the revisions from oldest to newest; reverse this (cheap to do here) to have the same default sorting as svn log.
+readarray -t revisions < <(svn mergeinfo --non-interactive --show-revs eligible "$source" | tac)    # Subversion lists the revisions from oldest to newest; reverse this (cheap to do here) to have the same default sorting as svn log.
 if [ ${#revisions[@]} -eq 0 ]; then
-    echo >&2 "No merge candidates found"
+    echo >&2 'No merge candidates found'
     exit 1
 fi
 

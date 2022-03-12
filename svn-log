@@ -334,10 +334,10 @@ if [ "$isServerRevisions" ]; then
 	# consistent way. Without this, we would either get an unexpected list
 	# of all server revisions, or a Subversion error about -r and -c being
 	# mutually exclusive.
-	allargs+=("${serverArgs[@]}" $(svn-url "${serverArgs[@]}"))
+	allargs+=("${serverArgs[@]}" "$(svn-url "${serverArgs[@]}")")
     else
 	# Determine the range of revisions available on the server.
-	allargs+=($(svn-serverrevs "${serverArgs[@]}"))
+	readarray -O ${#allargs[@]} -t allargs < <(svn-serverrevs "${serverArgs[@]}")
     fi
 fi
 if [ "$limit" ]; then
