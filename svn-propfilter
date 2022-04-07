@@ -89,8 +89,7 @@ case "$scope" in
 		    contents=$line # Start anew.
 		    ;;
 		*)
-		    contents="${contents}${contents:+
-}$line"
+		    contents+="${contents:+$'\n'}$line"
 		    ;;
 	    esac
 	done < "$TMPFILE"
@@ -114,8 +113,7 @@ case "$scope" in
 		Property\ changes\ on:\ *)
 		    if [ "$file" = "${line#Property changes on: }" ]; then
 			# Still belongs to the same file.
-			contents="$contents
-$line"
+			contents="$contents"$'\n'"$line"
 		    else
 			processContents "$contents"
 
@@ -124,8 +122,7 @@ $line"
 		    fi
 		    ;;
 		*)
-		    contents="${contents}${contents:+
-}$line"
+		    contents+="${contents:+$'\n'}$line"
 		    ;;
 	    esac
 	done < "$TMPFILE"

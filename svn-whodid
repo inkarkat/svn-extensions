@@ -57,7 +57,7 @@ if [ ${#files[@]} -gt 1 ]; then
     # Strip off duplicate commits that cover multiple files; for the AWK
     # reporting, it's important that the list remains sorted descending by
     # revision number.
-    filter="$filter | sort -t '|' -k 2 -r -u"
+    filter+=' | sort -t \| -k 2 -r -u'
 fi
 
 set -o pipefail

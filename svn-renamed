@@ -47,9 +47,9 @@ while [ $# -gt 0 ]
 do
     case "$1" in
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
-	-c|--change)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-	-r|--revision)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
-	-l|--limit)	revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+	-c|--change)	revisionRangeArgs+="${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+	-r|--revision)	revisionRangeArgs+="${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
+	-l|--limit)	revisionRangeArgs+="${revisionRangeArgs:+ }$1 '$2'"; shift; shift;;
 	--server)	shift; isServerRevisions='true';;
 	--from)		shift; isFrom=t;;
 	--omit-revision)
@@ -69,7 +69,7 @@ if [ "$isServerRevisions" ]; then
 
     # Only add the revision filter for getRevisions() here, the server repo URL
     # must be passed to all svn commands.
-    revisionRangeArgs="${revisionRangeArgs}${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
+    revisionRangeArgs+="${revisionRangeArgs:+ }${serverRevisionsArgs% *}"
 
     # Only append the server repo URL here; the revision selection is done by the loop.
     allargs+=("${serverRevisionsArgs##* }")

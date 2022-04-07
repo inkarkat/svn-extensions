@@ -45,12 +45,12 @@ getRevisions()
     typeset -a svnAdditionalArgs=()
     typeset xmlFilter=
     case "$propFilterMethod" in
-	only) xmlFilter="${xmlFilter}${xmlFilter:+ }-i './/path/@prop-mods = \"true\"'";;
-	skip) xmlFilter="${xmlFilter}${xmlFilter:+ }-i './/path/@text-mods = \"true\"'";;
+	only) xmlFilter+="${xmlFilter:+ }-i './/path/@prop-mods = \"true\"'";;
+	skip) xmlFilter+="${xmlFilter:+ }-i './/path/@text-mods = \"true\"'";;
     esac
 
     if [ "$authorArgs" ]; then
-	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'contains(author,\"${authorArgs}\")'"
+	xmlFilter+="${xmlFilter:+ }-i 'contains(author,\"${authorArgs}\")'"
     fi
     if [ ${#grepArgs[@]} -gt 0 ]; then
 	local condition=
@@ -59,20 +59,20 @@ getRevisions()
 	do
 	    # XXX: Need matches() XSLT 2 function for regexp-based pattern matching.
 	    # Unfortunately, this isn't yet supported by xmlstarlet / libxslt.
-	    #condition="${condition}${condition:+ or }matches(msg,\"${grepArg}\")"
+	    #condition+="${condition:+ or }matches(msg,\"${grepArg}\")"
 	    # XXX: Need XSLT 2 "i" flag to matches() or lower-case() function
 	    # for case-insensitive comparison. Work around (for ASCII
 	    # characters) with translate().
 	    if [ "$grepCaseInsensitive" ]; then
-		condition="${condition}${condition:+ or }contains(translate(msg, \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\", \"abcdefghijklmnopqrstuvwxyz\"),\"${grepArg}\")"
+		condition+="${condition:+ or }contains(translate(msg, \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\", \"abcdefghijklmnopqrstuvwxyz\"),\"${grepArg}\")"
 	    else
-		condition="${condition}${condition:+ or }contains(msg,\"${grepArg}\")"
+		condition+="${condition:+ or }contains(msg,\"${grepArg}\")"
 	    fi
 	done
-	xmlFilter="${xmlFilter}${xmlFilter:+ }-i '$condition'"
+	xmlFilter+="${xmlFilter:+ }-i '$condition'"
     fi
     #if [ "$isMergeFilter" ]; then
-    #	xmlFilter="${xmlFilter}${xmlFilter:+ }-i 'matches(msg,\"[Mm]erg\\(e\\|ed\\|es\\|ing\\)\\b\")'"
+    #	xmlFilter+="${xmlFilter:+ }-i 'matches(msg,\"[Mm]erg\\(e\\|ed\\|es\\|ing\\)\\b\")'"
     #fi
     if [ "$nonRecursivePaths" ]; then
 	# We need the file path information from the verbose log.
@@ -83,12 +83,12 @@ getRevisions()
 	do
 	    if [ "$isFirst" ]; then
 		isFirst=
-		xmlFilter="${xmlFilter}${xmlFilter:+ }-i './/path = \"${path}\""
+		xmlFilter+="${xmlFilter:+ }-i './/path = \"${path}\""
 	    else
-		xmlFilter="${xmlFilter} or .//path = \"${path}\""
+		xmlFilter+=" or .//path = \"${path}\""
 	    fi
 	done
-	xmlFilter="${xmlFilter}'"
+	xmlFilter+="'"
     fi
 ####D echo >&2 "**** $xmlFilter"
     [ "$xmlFilter" ] && typeset -a svnLogArgs=() || typeset -a svnLogArgs=('--with-no-revprops')

@@ -44,11 +44,11 @@ do
 	--help|-h|-\?)	shift; printUsage "$0"; exit 0;;
 	-b)
 	    shift
-	    diffOptions="${diffOptions}${diffOptions:+ }-b"
+	    diffOptions+="${diffOptions:+ }-b"
 	    ;;
 	-w)
 	    shift
-	    diffOptions="${diffOptions}${diffOptions:+ }-w"
+	    diffOptions+="${diffOptions:+ }-w"
 	    ;;
 	--context)
 	    shift

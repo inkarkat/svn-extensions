@@ -17,7 +17,7 @@ do
     case "$1" in
 	--help|-h|-\?)	    shift; printUsage "$0"; exit 0;;
 	--recursive|-r)	    shift; recursiveFlag='-r';;
-	--no-ignore|-x)	    shift; additionalArgs="${additionalArgs}${additionalArgs:+ }--no-ignore";;
+	--no-ignore|-x)	    shift; additionalArgs+="${additionalArgs:+ }--no-ignore";;
 	*)		    break;;
     esac
 done
