@@ -27,7 +27,7 @@ colorize()
     fi
 }
 
-TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
+TMPFILE="$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TMPDIR:-/tmp}/$(basename -- "$0").$$")"
 cleanup()
 {
     rm "$TMPFILE" 2>/dev/null

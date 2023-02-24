@@ -31,7 +31,7 @@ retroactiveHistory()
 	return 1
     fi
 
-    TMPFILE=$(mktemp --tmpdir "svn-copy-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/svn-copy.$$")
+    TMPFILE="$(mktemp --tmpdir "svn-copy-XXXXXX" 2>/dev/null || echo "${TMPDIR:-/tmp}/svn-copy.$$")"
     cp -- "$2" "$TMPFILE" || return $?
     svn delete --force "$2" || { status=$?; mv -- "$TMPFILE" "$2"; return $status; }
     svn cp "$@" || { status=$?; mv -- "$TMPFILE" "$2"; return $status; }

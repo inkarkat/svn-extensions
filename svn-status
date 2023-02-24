@@ -39,7 +39,7 @@ filterStatus()
 if [[ ${#allargs[@]} -eq 0 || "${allargs[${#allargs[@]}]}" = -* ]]; then
     svn status "${allargs[@]}" | ignoreNonStatusLines | filterStatus
 else
-    TMPFILE=$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TEMP:-/tmp}/$(basename -- "$0").$$")
+    TMPFILE="$(mktemp --tmpdir "$(basename -- "$0")-XXXXXX" 2>/dev/null || echo "${TMPDIR:-/tmp}/$(basename -- "$0").$$")"
     cleanup()
     {
 	rm -f "$TMPFILE" 2>/dev/null
