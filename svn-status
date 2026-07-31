@@ -44,7 +44,7 @@ else
     {
 	rm -f "$TMPFILE" 2>/dev/null
     }
-    [ "$DEBUG" ] || trap 'cleanup' EXIT
+    ! ${DEBUG:+debugenabled --invert-match --} ${DEBUG:-:} || trap 'cleanup' EXIT
 
     svn status "${allargs[@]}" | ignoreNonStatusLines | filterStatus | tee "$TMPFILE" || exit $?
 

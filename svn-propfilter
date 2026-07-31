@@ -70,7 +70,7 @@ cleanup()
 {
     rm -f "$TMPFILE" 2>/dev/null
 }
-[ "$DEBUG" ] || trap 'cleanup' EXIT
+! ${DEBUG:+debugenabled --invert-match --} ${DEBUG:-:} || trap 'cleanup' EXIT
 cat - > "$TMPFILE" || exit $?
 
 
